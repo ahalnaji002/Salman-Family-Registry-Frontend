@@ -1,15 +1,20 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import logo from "../../assets/images/salman-family-logo.png";
 
 function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    // لاحقًا سنربط النموذج مع Backend:
+    // دخول تجريبي مؤقت إلى لوحة الإدارة.
+    // لاحقًا سنستبدله بطلب حقيقي إلى:
     // POST /api/admin/auth/login
+    localStorage.setItem("adminToken", "temporary-admin-token");
+
+    navigate("/admin", { replace: true });
   };
 
   return (
@@ -53,6 +58,7 @@ function AdminLoginPage() {
                 className="h-full w-full object-contain"
               />
             </div>
+
             <h1 className="text-2xl font-semibold text-[#031632] md:text-3xl">
               تسجيل دخول مدير النظام
             </h1>

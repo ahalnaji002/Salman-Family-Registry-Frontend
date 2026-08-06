@@ -1,3 +1,7 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import AddSupervisorModal from "./AddSupervisorModal";
+import EditSupervisorModal from "./EditSupervisorModal";
 const stats = [
   {
     title: "إجمالي الأسر المسجلة",
@@ -21,7 +25,7 @@ const stats = [
   },
 ];
 
-const supervisors = [
+const initialSupervisors = [
   {
     name: "أحمد محمد سلمان",
     nationalId: "1023456789",
@@ -39,6 +43,39 @@ const supervisors = [
 ];
 
 function DashboardPage() {
+  const navigate = useNavigate();
+  const [supervisors, setSupervisors] = useState(initialSupervisors);
+  const [isAddSupervisorOpen, setIsAddSupervisorOpen] = useState(false);
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
+  const [isEditSupervisorOpen, setIsEditSupervisorOpen] = useState(false);
+
+  const handleAddSupervisor = (newSupervisor) => {
+    setSupervisors((currentSupervisors) => [
+      ...currentSupervisors,
+      newSupervisor,
+    ]);
+  };
+
+  const handleOpenEditSupervisor = (supervisor) => {
+    setSelectedSupervisor(supervisor);
+    setIsEditSupervisorOpen(true);
+  };
+
+  const handleCloseEditSupervisor = () => {
+    setIsEditSupervisorOpen(false);
+    setSelectedSupervisor(null);
+  };
+
+  const handleSaveSupervisor = (updatedSupervisor) => {
+    setSupervisors((currentSupervisors) =>
+      currentSupervisors.map((supervisor) =>
+        supervisor.nationalId === selectedSupervisor?.nationalId
+          ? updatedSupervisor
+          : supervisor,
+      ),
+    );
+  };
+
   return (
     <section className="space-y-8">
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -74,6 +111,7 @@ function DashboardPage() {
 
             <button
               type="button"
+              onClick={() => navigate("/admin/families")}
               className="mt-6 w-full rounded-xl border-2 border-[#031632] px-4 py-3 font-semibold text-[#031632] transition hover:bg-[#031632] hover:text-white"
             >
               الانتقال للقائمة
@@ -90,6 +128,7 @@ function DashboardPage() {
 
             <button
               type="button"
+              onClick={() => navigate("/admin/export")}
               className="mt-6 w-full rounded-xl bg-[#dbe6ff] px-4 py-3 font-semibold text-[#031632] transition hover:bg-[#cbd9fb]"
             >
               الانتقال إلى التصدير
@@ -192,6 +231,7 @@ function DashboardPage() {
 
           <button
             type="button"
+            onClick={() => setIsAddSupervisorOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-[#1a2b48] px-5 py-3 font-semibold text-white transition hover:bg-[#031632]"
           >
             <svg
@@ -266,6 +306,7 @@ function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
+                        onClick={() => handleOpenEditSupervisor(supervisor)}
                         aria-label="تعديل المشرف"
                         title="تعديل"
                         className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-[#34446b] transition hover:bg-slate-50"
@@ -321,7 +362,21 @@ function DashboardPage() {
           </table>
         </div>
       </article>
+
+      <AddSupervisorModal
+        isOpen={isAddSupervisorOpen}
+        onClose={() => setIsAddSupervisorOpen(false)}
+        onAdd={handleAddSupervisor}
+      />
+
+      <EditSupervisorModal
+        isOpen={isEditSupervisorOpen}
+        supervisor={selectedSupervisor}
+        onClose={handleCloseEditSupervisor}
+        onSave={handleSaveSupervisor}
+      />
     </section>
+    
   );
 }
 

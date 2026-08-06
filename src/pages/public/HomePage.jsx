@@ -1,64 +1,245 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+
 function HomePage() {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = (event) => {
+    event.preventDefault();
+
+    // لاحقًا سيتم ربطه بالـ Backend:
+    // POST /api/auth/login
+
+    navigate("/login");
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50" dir="rtl">
-      <section className="mx-auto grid min-h-[calc(100vh-89px)] max-w-6xl items-center gap-10 px-6 py-12 lg:grid-cols-2">
-        <div>
-          <span className="inline-block rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-800">
-            التسجيل متاح الآن
+    <section className="relative min-h-[calc(100vh-76px)] overflow-hidden bg-[#fffaf2]">
+      <div
+        className="pointer-events-none absolute inset-0"
+        aria-hidden="true"
+        style={{
+          background:
+            "radial-gradient(circle at 18% 22%, rgba(255,250,239,0.98), transparent 34%), radial-gradient(circle at 82% 28%, rgba(239,221,184,0.52), transparent 32%), radial-gradient(circle at 50% 85%, rgba(248,238,217,0.72), transparent 38%), linear-gradient(135deg, #fffdf8 0%, #f8f0e2 48%, #fff9ef 100%)",
+        }}
+      />
+
+      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-5 py-12 md:px-8 lg:min-h-[720px] lg:grid-cols-[1.1fr_0.9fr] lg:py-16">
+        <div className="order-2 lg:order-1">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#e7d9bd] bg-white/70 px-4 py-2 text-sm font-semibold text-[#5f513d] shadow-sm backdrop-blur-sm">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-4 w-4"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 3 5 6v5c0 4.5 2.8 8.2 7 10 4.2-1.8 7-5.5 7-10V6Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="m9.5 12 1.7 1.7 3.5-3.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+
+            بوابة إلكترونية آمنة
           </span>
 
-          <h2 className="mt-6 text-4xl font-extrabold leading-tight text-slate-900 md:text-5xl">
-            أهلاً بك في سجل
-            <span className="block text-blue-950">عائلة سلمان</span>
+          <h2 className="mt-7 max-w-2xl text-4xl font-extrabold leading-[1.35] text-[#031632] md:text-5xl">
+            مرحبًا بكم في نظام
+            <span className="block text-[#c99b45]">
+              حصر وتحديث بيانات
+            </span>
+            <span className="block">عائلة سلمان</span>
           </h2>
 
-          <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">
-            يمكنك تسجيل بيانات الأسرة، إضافة الزوجات والأبناء والحالات الخاصة،
-            ثم مراجعة المعلومات قبل اعتمادها.
+          <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
+            منصة رقمية مخصصة لحفظ ترابط العائلة وتسهيل التواصل بين أفرادها.
+            بادر بتحديث بياناتك لتكون جزءًا من السجل العائلي الموثوق، في بيئة
+            آمنة تضمن خصوصية معلوماتك.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-4">
-            <button
-              type="button"
-              className="rounded-xl bg-blue-950 px-7 py-3.5 font-bold text-white shadow-sm transition hover:bg-blue-900"
-            >
-              بدء التسجيل
-            </button>
+          <button
+            type="button"
+            onClick={() => navigate("/register")}
+            className="mt-8 inline-flex items-center gap-3 rounded-xl bg-[#031632] px-7 py-3.5 font-semibold text-white shadow-lg transition hover:bg-[#142947]"
+          >
+            بدء التسجيل
 
-            <button
-              type="button"
-              className="rounded-xl bg-amber-400 px-7 py-3.5 font-bold text-blue-950 transition hover:bg-amber-500"
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-5 w-5"
+              aria-hidden="true"
             >
-              متابعة طلب سابق
-            </button>
-          </div>
+              <path
+                d="M19 12H5M10 7l-5 5 5 5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
-          <h3 className="text-xl font-bold text-slate-900">خطوات التسجيل</h3>
-
-          <div className="mt-6 space-y-5">
-            {[
-              "البيانات الأساسية",
-              "بيانات الزوجة والسكن",
-              "الأبناء والبنات المتزوجات",
-              "الحالات الخاصة والمراجعة",
-            ].map((step, index) => (
-              <div
-                key={step}
-                className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400 font-bold text-blue-950">
-                  {index + 1}
+        <div className="order-1 lg:order-2">
+          <article className="mx-auto w-full max-w-md overflow-hidden rounded-[28px] border border-[#eadfc8] bg-white/92 shadow-[0_22px_55px_rgba(80,58,25,0.12)] backdrop-blur-sm">
+            <div className="p-6 md:p-8">
+              <div className="text-center">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#f5ead4] text-[#031632]">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 11.5 12 4l9 7.5" />
+                    <path d="M5.5 10.5V20h13v-9.5" />
+                    <path d="M9 20v-6h6v6" />
+                  </svg>
                 </span>
 
-                <span className="font-medium text-slate-700">{step}</span>
+                <h3 className="mt-5 text-2xl font-bold text-[#031632]">
+                  تسجيل دخول العائلة
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  مرحبًا بعودتك، يرجى إدخال بياناتك للمتابعة
+                </p>
               </div>
-            ))}
-          </div>
+
+              <form className="mt-7 space-y-5" onSubmit={handleLogin}>
+                <div>
+                  <label
+                    htmlFor="homeNationalId"
+                    className="mb-2 block text-sm font-semibold text-[#111c2c]"
+                  >
+                    رقم الهوية
+                  </label>
+
+                  <input
+                    id="homeNationalId"
+                    name="nationalId"
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    placeholder="أدخل رقم الهوية"
+                    className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="homePassword"
+                    className="mb-2 block text-sm font-semibold text-[#111c2c]"
+                  >
+                    كلمة المرور
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      id="homePassword"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      placeholder="أدخل كلمة المرور"
+                      className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pl-12 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                    />
+
+                    <button
+                      type="button"
+                      aria-label={
+                        showPassword
+                          ? "إخفاء كلمة المرور"
+                          : "إظهار كلمة المرور"
+                      }
+                      onClick={() =>
+                        setShowPassword((current) => !current)
+                      }
+                      className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632]"
+                    >
+                      {showPassword ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="h-5 w-5"
+                          aria-hidden="true"
+                        >
+                          <path d="m3 3 18 18" />
+                          <path d="M10.6 10.7a2 2 0 0 0 2.7 2.7" />
+                          <path d="M9.8 4.3A10.8 10.8 0 0 1 12 4c6 0 9.5 6 9.5 6a16.5 16.5 0 0 1-3 3.8M6.2 6.2C3.8 7.8 2.5 10 2.5 10S6 16 12 16a10 10 0 0 0 3.4-.6" />
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="h-5 w-5"
+                          aria-hidden="true"
+                        >
+                          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                          <circle cx="12" cy="12" r="2.5" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <label className="flex items-center gap-2 text-slate-600">
+                    <input
+                      type="checkbox"
+                      name="rememberMe"
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    تذكرني
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/login")}
+                    className="font-semibold text-[#031632] hover:underline"
+                  >
+                    نسيت كلمة المرور؟
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-[#142947]"
+                >
+                  دخول
+                </button>
+              </form>
+
+              <div className="mt-6 border-t border-[#eadfc8] pt-5 text-center text-sm text-slate-500">
+                ليس لديك حساب؟
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/register")}
+                  className="mr-2 font-bold text-[#031632] hover:underline"
+                >
+                  إنشاء حساب جديد
+                </button>
+              </div>
+            </div>
+          </article>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
   );
 }
 

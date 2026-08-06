@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useNavigate } from "react-router";
 import logo from "../assets/images/salman-family-logo.png";
 
 const navigationItems = [
@@ -81,18 +81,46 @@ const navigationItems = [
       </svg>
     ),
   },
+  {
+    label: "الإعدادات",
+    path: "/admin/settings",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className="h-6 w-6"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="3" />
+
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"
+        />
+      </svg>
+    ),
+  },
 ];
 
 function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
 
   const handleLogout = () => {
-    // لاحقًا:
+    // لاحقًا عند ربط الـ Backend:
+    // localStorage.removeItem("adminToken");
+    // sessionStorage.removeItem("adminToken");
     // POST /api/admin/auth/logout
+
+    closeSidebar();
+    navigate("/admin/login", { replace: true });
   };
 
   return (
@@ -120,7 +148,6 @@ function AdminLayout() {
 
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold">عائلة سلمان</h1>
-
             <p className="mt-1 text-sm text-slate-300">سجل العائلة</p>
           </div>
 
