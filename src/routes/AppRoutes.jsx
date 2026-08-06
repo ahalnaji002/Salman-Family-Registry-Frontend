@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router";
 
 import PublicLayout from "../layouts/PublicLayout";
+import AdminLayout from "../layouts/AdminLayout";
 
 import HomePage from "../pages/public/HomePage";
 import LoginPage from "../pages/public/LoginPage";
@@ -8,6 +9,8 @@ import RegisterPage from "../pages/public/RegisterPage";
 import NotFoundPage from "../pages/public/NotFoundPage";
 
 import AdminLoginPage from "../pages/admin/AdminLoginPage";
+import DashboardPage from "../pages/admin/DashboardPage";
+import FamiliesPage from "../pages/admin/FamiliesPage";
 
 function AppRoutes() {
   return (
@@ -19,6 +22,11 @@ function AppRoutes() {
       </Route>
 
       <Route path="/admin/login" element={<AdminLoginPage />} />
+
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="families" element={<FamiliesPage />} />
+      </Route>
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
