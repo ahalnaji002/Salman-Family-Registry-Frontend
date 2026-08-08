@@ -1,42 +1,165 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+
+const API_BASE_URL = "http://localhost:5000";
+
+const initialFormData = {
+  fullName: "",
+  nationalId: "",
+  dateOfBirth: "",
+  phone: "",
+  bloodType: "",
+  maritalStatus: "",
+  workStatus: "",
+  jobSector: "",
+  otherJobSector: "",
+  incomeCategory: "",
+};
+
 function BasicInfoPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [formData, setFormData] = useState({
-    fullName: "محمد أحمد علي سلمان",
-    nationalId: "102938475",
-    dateOfBirth: "",
-    phone: "",
-    bloodType: "",
-    maritalStatus: "",
-    workStatus: "",
-    jobSector: "",
-    otherJobSector: "",
-    incomeCategory: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const [familyPhoto, setFamilyPhoto] = useState(null);
+  const [existingPhotoPath, setExistingPhotoPath] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const token =
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
+
+  const getAuthHeaders = () => ({
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
+  });
+
+  useEffect(() => {
+    const loadFamilyData = async () => {
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/family`,
+          {
+            headers: getAuthHeaders(),
+          },
+        );
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("family");
+
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "تعذر جلب بيانات الأسرة.",
+          );
+        }
+
+        const family = data.data?.family;
+
+        if (!family) {
+          throw new Error("لم يتم العثور على بيانات الأسرة.");
+        }
+
+        setFormData({
+          fullName: family.full_name || "",
+          nationalId: family.national_id || "",
+          dateOfBirth: family.date_of_birth || "",
+          phone: family.phone || "",
+          bloodType: family.blood_type || "",
+          maritalStatus: family.marital_status || "",
+          workStatus: family.work_status || "",
+          jobSector: family.job_type || "",
+          otherJobSector: family.other_job_type || "",
+          incomeCategory: family.income_category || "",
+        });
+
+        setExistingPhotoPath(
+          family.personal_photo_path || "",
+        );
+      } catch (requestError) {
+        if (requestError instanceof TypeError) {
+          setError(
+            "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
+          );
+        } else {
+          setError(
+            requestError.message ||
+              "حدث خطأ أثناء تحميل البيانات.",
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFamilyData();
+  }, [navigate, token]);
+
+  useEffect(() => {
+    return () => {
+      if (familyPhoto?.preview) {
+        URL.revokeObjectURL(familyPhoto.preview);
+      }
+    };
+  }, [familyPhoto]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
 
+    let finalValue = value;
+
+    if (name === "nationalId") {
+      finalValue = value.replace(/\D/g, "").slice(0, 9);
+    }
+
+    if (name === "phone") {
+      finalValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
     setFormData((currentData) => ({
       ...currentData,
-      [name]: value,
-      ...(name === "workStatus" && value !== "employee"
+      [name]: finalValue,
+
+      ...(name === "workStatus" &&
+      finalValue !== "employee"
         ? {
             jobSector: "",
             otherJobSector: "",
           }
         : {}),
-      ...(name === "jobSector" && value !== "other"
+
+      ...(name === "jobSector" &&
+      finalValue !== "other"
         ? {
             otherJobSector: "",
           }
         : {}),
     }));
+
+    setError("");
+    setSuccessMessage("");
   };
 
   const handlePhotoChange = (event) => {
@@ -46,20 +169,312 @@ function BasicInfoPage() {
       return;
     }
 
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(selectedFile.type)) {
+      setError(
+        "يرجى اختيار صورة بصيغة JPG أو PNG أو WebP.",
+      );
+
+      event.target.value = "";
+      return;
+    }
+
+    if (selectedFile.size > 2 * 1024 * 1024) {
+      setError(
+        "حجم الصورة يجب ألا يتجاوز 2 ميجابايت.",
+      );
+
+      event.target.value = "";
+      return;
+    }
+
+    if (familyPhoto?.preview) {
+      URL.revokeObjectURL(familyPhoto.preview);
+    }
+
     setFamilyPhoto({
       file: selectedFile,
       preview: URL.createObjectURL(selectedFile),
     });
+
+    setError("");
+    setSuccessMessage("");
   };
 
-  const handleDraftSave = (event) => {
-    event.preventDefault();
+  const validateForm = () => {
+    if (!formData.fullName.trim()) {
+      return "الاسم الرباعي مطلوب.";
+    }
+
+    if (!/^\d{9}$/.test(formData.nationalId)) {
+      return "رقم الهوية يجب أن يتكون من 9 أرقام.";
+    }
+
+    if (!formData.dateOfBirth) {
+      return "تاريخ الميلاد مطلوب.";
+    }
+
+    if (!/^05\d{8}$/.test(formData.phone)) {
+      return "يرجى إدخال رقم جوال صحيح.";
+    }
+
+    if (!formData.maritalStatus) {
+      return "الحالة الاجتماعية مطلوبة.";
+    }
+
+    if (!formData.workStatus) {
+      return "حالة العمل مطلوبة.";
+    }
+
+    if (
+      formData.workStatus === "employee" &&
+      !formData.jobSector
+    ) {
+      return "جهة العمل مطلوبة عند اختيار موظف.";
+    }
+
+    if (
+      formData.jobSector === "other" &&
+      !formData.otherJobSector.trim()
+    ) {
+      return "يرجى تحديد جهة العمل.";
+    }
+
+    if (!formData.incomeCategory) {
+      return "فئة الدخل مطلوبة.";
+    }
+
+    return "";
   };
 
-  const handleSaveAndContinue = (event) => {
-    event.preventDefault();
-    navigate("/family/wives");
+  const saveFamilyData = async () => {
+    const validationError = validateForm();
+
+    if (validationError) {
+      throw new Error(validationError);
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/family`,
+      {
+        method: "PATCH",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          full_name: formData.fullName.trim(),
+          national_id: formData.nationalId,
+          date_of_birth: formData.dateOfBirth,
+          phone: formData.phone,
+          blood_type: formData.bloodType || null,
+          marital_status: formData.maritalStatus,
+          work_status: formData.workStatus,
+
+          job_type:
+            formData.workStatus === "employee"
+              ? formData.jobSector || null
+              : null,
+
+          other_job_type:
+            formData.workStatus === "employee" &&
+            formData.jobSector === "other"
+              ? formData.otherJobSector.trim()
+              : null,
+
+          income_category: formData.incomeCategory,
+        }),
+      },
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("family");
+
+      navigate("/login", { replace: true });
+
+      throw new Error("انتهت جلسة تسجيل الدخول.");
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "تعذر حفظ البيانات الأساسية.",
+      );
+    }
+
+    const updatedFamily = data.data?.family;
+
+    if (updatedFamily) {
+      setFormData((current) => ({
+        ...current,
+        fullName:
+          updatedFamily.full_name ?? current.fullName,
+        nationalId:
+          updatedFamily.national_id ??
+          current.nationalId,
+        phone:
+          updatedFamily.phone ?? current.phone,
+      }));
+
+      const storedUser = JSON.parse(
+        localStorage.getItem("user") || "{}",
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...storedUser,
+          full_name:
+            updatedFamily.full_name ??
+            storedUser.full_name,
+          national_id:
+            updatedFamily.national_id ??
+            storedUser.national_id,
+          phone:
+            updatedFamily.phone ??
+            storedUser.phone,
+        }),
+      );
+    }
   };
+
+  const uploadPhoto = async () => {
+    if (!familyPhoto?.file) {
+      return;
+    }
+
+    const photoFormData = new FormData();
+
+    photoFormData.append(
+      "photo",
+      familyPhoto.file,
+    );
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/family/photo`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: photoFormData,
+      },
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          "تم حفظ البيانات، لكن تعذر رفع الصورة.",
+      );
+    }
+
+    const photoPath =
+      data.data?.personal_photo_path || "";
+
+    if (photoPath) {
+      setExistingPhotoPath(photoPath);
+    }
+
+    if (familyPhoto.preview) {
+      URL.revokeObjectURL(familyPhoto.preview);
+    }
+
+    setFamilyPhoto(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const saveAllData = async () => {
+    await saveFamilyData();
+    await uploadPhoto();
+  };
+
+  const handleDraftSave = async (event) => {
+    event.preventDefault();
+
+    if (saving) {
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await saveAllData();
+
+      setSuccessMessage(
+        "تم حفظ البيانات الأساسية بنجاح.",
+      );
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "حدث خطأ أثناء حفظ البيانات.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAndContinue = async (event) => {
+    event.preventDefault();
+
+    if (saving) {
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await saveAllData();
+
+      navigate("/family/wives");
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "حدث خطأ أثناء حفظ البيانات.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const displayedPhoto =
+    familyPhoto?.preview ||
+    (existingPhotoPath
+      ? `${API_BASE_URL}${existingPhotoPath}`
+      : "");
+
+  if (loading) {
+    return (
+      <section className="px-4 py-8 sm:px-6 md:px-8 md:py-10">
+        <div className="mx-auto flex min-h-[420px] w-full max-w-6xl items-center justify-center">
+          <div className="text-center">
+            <span className="mx-auto block h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#031632]" />
+
+            <p className="mt-4 text-sm font-semibold text-slate-500">
+              جاري تحميل البيانات الأساسية...
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="px-4 py-8 sm:px-6 md:px-8 md:py-10">
       <div className="mx-auto w-full max-w-6xl">
@@ -78,7 +493,13 @@ function BasicInfoPage() {
               </p>
             </div>
 
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
+            <span
+              className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                successMessage
+                  ? "bg-green-50 text-green-700"
+                  : "bg-[#eef3ff] text-[#031632]"
+              }`}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -95,16 +516,35 @@ function BasicInfoPage() {
                 <circle cx="12" cy="12" r="9" />
               </svg>
 
-              لم تحفظ التغييرات
+              {saving
+                ? "جاري الحفظ..."
+                : successMessage
+                  ? "تم حفظ التغييرات"
+                  : "لم تحفظ التغييرات"}
             </span>
           </div>
+
+          {error && (
+            <div
+              role="alert"
+              className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700"
+            >
+              {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mt-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
+              {successMessage}
+            </div>
+          )}
 
           <div className="mt-6 rounded-xl bg-[#f1f3ff] p-4 sm:p-5">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#dfe9ff] text-slate-500">
-                {familyPhoto?.preview ? (
+                {displayedPhoto ? (
                   <img
-                    src={familyPhoto.preview}
+                    src={displayedPhoto}
                     alt="صورة رب الأسرة"
                     className="h-full w-full object-cover"
                   />
@@ -129,15 +569,21 @@ function BasicInfoPage() {
               <div className="flex-1">
                 <h2 className="text-sm font-bold text-[#031632]">
                   صورة رب الأسرة
+                  <span className="mr-1 text-red-500">*</span>
                 </h2>
 
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded-lg bg-[#031632] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#020f23]"
+                    disabled={saving}
+                    onClick={() =>
+                      fileInputRef.current?.click()
+                    }
+                    className="rounded-lg bg-[#031632] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#020f23] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    رفع صورة شخصية
+                    {existingPhotoPath
+                      ? "تغيير الصورة"
+                      : "رفع صورة شخصية"}
                   </button>
 
                   {familyPhoto && (
@@ -148,8 +594,8 @@ function BasicInfoPage() {
                 </div>
 
                 <p className="mt-2 text-xs leading-6 text-slate-500">
-                  الصورة اختيارية، بصيغة JPG أو PNG أو WebP، وبحد أقصى 2
-                  ميجابايت.
+                  الصورة مطلوبة، بصيغة JPG أو PNG أو WebP،
+                  وبحد أقصى 2 ميجابايت.
                 </p>
 
                 <input
@@ -157,6 +603,7 @@ function BasicInfoPage() {
                   type="file"
                   accept=".jpg,.jpeg,.png,.webp"
                   onChange={handlePhotoChange}
+                  disabled={saving}
                   className="hidden"
                 />
               </div>
@@ -169,7 +616,8 @@ function BasicInfoPage() {
                 htmlFor="fullName"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                الاسم الرباعي <span className="text-red-500">*</span>
+                الاسم الرباعي{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -178,8 +626,10 @@ function BasicInfoPage() {
                 type="text"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="أدخل الاسم الرباعي"
-                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition placeholder:text-slate-400 focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                disabled={saving}
+                required
+                placeholder=""
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition placeholder:text-slate-400 focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               />
             </div>
 
@@ -188,7 +638,8 @@ function BasicInfoPage() {
                 htmlFor="nationalId"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                رقم الهوية <span className="text-red-500">*</span>
+                رقم الهوية{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -199,27 +650,13 @@ function BasicInfoPage() {
                 maxLength={9}
                 value={formData.nationalId}
                 onChange={handleChange}
+                disabled={saving}
+                required
                 placeholder="أدخل رقم الهوية"
-                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-left text-sm text-[#031632] outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-left text-sm text-[#031632] outline-none transition placeholder:text-right placeholder:text-slate-400 focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               />
 
-              <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-4 w-4"
-                >
-                  <circle cx="12" cy="12" r="9" />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 11v5m0-8h.01"
-                  />
-                </svg>
-
+              <p className="mt-2 text-xs text-slate-500">
                 يرجى إدخال رقم هوية مكون من 9 أرقام.
               </p>
             </div>
@@ -229,7 +666,8 @@ function BasicInfoPage() {
                 htmlFor="dateOfBirth"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                تاريخ الميلاد <span className="text-red-500">*</span>
+                تاريخ الميلاد{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -238,7 +676,9 @@ function BasicInfoPage() {
                 type="date"
                 value={formData.dateOfBirth}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                disabled={saving}
+                required
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               />
             </div>
 
@@ -247,7 +687,8 @@ function BasicInfoPage() {
                 htmlFor="phone"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                رقم الجوال <span className="text-red-500">*</span>
+                رقم الجوال{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -259,35 +700,23 @@ function BasicInfoPage() {
                 autoComplete="off"
                 value={formData.phone}
                 onChange={handleChange}
+                disabled={saving}
+                required
                 placeholder="05XXXXXXXX"
-                className={`h-12 w-full rounded-xl border px-4 text-left text-sm text-[#031632] outline-none transition placeholder:text-right placeholder:text-slate-400 ${
-                  formData.phone && !/^05\d{8}$/.test(formData.phone)
+                className={`h-12 w-full rounded-xl border px-4 text-left text-sm text-[#031632] outline-none transition placeholder:text-right placeholder:text-slate-400 disabled:opacity-60 ${
+                  formData.phone &&
+                  !/^05\d{8}$/.test(formData.phone)
                     ? "border-red-300 bg-[#fffafa] focus:border-red-400 focus:ring-4 focus:ring-red-100"
                     : "border-slate-200 bg-[#fafafe] focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
                 }`}
               />
 
-              {formData.phone && !/^05\d{8}$/.test(formData.phone) && (
-                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-500">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-4 w-4"
-                  >
-                    <circle cx="12" cy="12" r="9" />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 8v5m0 3h.01"
-                    />
-                  </svg>
-
-                  يرجى إدخال رقم جوال صحيح.
-                </p>
-              )}
+              {formData.phone &&
+                !/^05\d{8}$/.test(formData.phone) && (
+                  <p className="mt-2 text-xs font-medium text-red-500">
+                    يرجى إدخال رقم جوال صحيح.
+                  </p>
+                )}
             </div>
 
             <div>
@@ -303,7 +732,8 @@ function BasicInfoPage() {
                 name="bloodType"
                 value={formData.bloodType}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                disabled={saving}
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               >
                 <option value="">اختر...</option>
                 <option value="A+">A+</option>
@@ -322,7 +752,8 @@ function BasicInfoPage() {
                 htmlFor="maritalStatus"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                الحالة الاجتماعية <span className="text-red-500">*</span>
+                الحالة الاجتماعية{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <select
@@ -330,7 +761,9 @@ function BasicInfoPage() {
                 name="maritalStatus"
                 value={formData.maritalStatus}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                disabled={saving}
+                required
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               >
                 <option value="">اختر...</option>
                 <option value="single">أعزب</option>
@@ -345,7 +778,8 @@ function BasicInfoPage() {
                 htmlFor="workStatus"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                حالة العمل <span className="text-red-500">*</span>
+                حالة العمل{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <select
@@ -353,7 +787,9 @@ function BasicInfoPage() {
                 name="workStatus"
                 value={formData.workStatus}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                disabled={saving}
+                required
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               >
                 <option value="">اختر...</option>
                 <option value="employee">موظف</option>
@@ -368,7 +804,8 @@ function BasicInfoPage() {
                   htmlFor="jobSector"
                   className="mb-2 block text-sm font-semibold text-[#031632]"
                 >
-                  جهة العمل <span className="text-red-500">*</span>
+                  جهة العمل{" "}
+                  <span className="text-red-500">*</span>
                 </label>
 
                 <select
@@ -376,12 +813,25 @@ function BasicInfoPage() {
                   name="jobSector"
                   value={formData.jobSector}
                   onChange={handleChange}
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                  disabled={saving}
+                  required
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
                 >
-                  <option value="">اختر جهة العمل</option>
-                  <option value="government">حكومي</option>
-                  <option value="private">قطاع خاص</option>
-                  <option value="other">أخرى</option>
+                  <option value="">
+                    اختر جهة العمل
+                  </option>
+
+                  <option value="government">
+                    حكومي
+                  </option>
+
+                  <option value="private">
+                    قطاع خاص
+                  </option>
+
+                  <option value="other">
+                    أخرى
+                  </option>
                 </select>
 
                 <p className="mt-2 text-xs leading-6 text-slate-500">
@@ -397,7 +847,8 @@ function BasicInfoPage() {
                     htmlFor="otherJobSector"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    تحديد جهة العمل <span className="text-red-500">*</span>
+                    تحديد جهة العمل{" "}
+                    <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -406,8 +857,10 @@ function BasicInfoPage() {
                     type="text"
                     value={formData.otherJobSector}
                     onChange={handleChange}
+                    disabled={saving}
+                    required
                     placeholder="اكتب جهة العمل أو القطاع"
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition placeholder:text-slate-400 focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                    className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition placeholder:text-slate-400 focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
                   />
 
                   <p className="mt-2 text-xs leading-6 text-slate-500">
@@ -421,7 +874,8 @@ function BasicInfoPage() {
                 htmlFor="incomeCategory"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                فئة الدخل <span className="text-red-500">*</span>
+                فئة الدخل{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               <select
@@ -429,37 +883,56 @@ function BasicInfoPage() {
                 name="incomeCategory"
                 value={formData.incomeCategory}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
+                disabled={saving}
+                required
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               >
                 <option value="">اختر...</option>
-                <option value="0-1000">من 0 إلى 1000</option>
-                <option value="1000-3000">من 1000 إلى 3000</option>
-                <option value="3000+">أكثر من 3000</option>
+
+                <option value="0-1000">
+                  من 0 إلى 1000
+                </option>
+
+                <option value="1000-3000">
+                  من 1000 إلى 3000
+                </option>
+
+                <option value="3000+">
+                  أكثر من 3000
+                </option>
               </select>
             </div>
           </div>
-        </form>
 
-        <div className="mt-7 flex flex-col gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-end">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={handleDraftSave}
-              className="h-11 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
-            >
-              حفظ كمسودة
-            </button>
+          <div className="mt-7 flex flex-col gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleDraftSave}
+                disabled={saving}
+                className="h-11 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving
+                  ? "جاري الحفظ..."
+                  : "حفظ كمسودة"}
+              </button>
 
-            <button
-              type="button"
-              onClick={handleSaveAndContinue}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-            >
-              حفظ والمتابعة
-              <span aria-hidden="true">←</span>
-            </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving
+                  ? "جاري الحفظ..."
+                  : "حفظ والمتابعة"}
+
+                {!saving && (
+                  <span aria-hidden="true">←</span>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </section>
   );

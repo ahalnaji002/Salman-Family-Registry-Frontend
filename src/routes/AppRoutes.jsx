@@ -20,6 +20,7 @@ import FamiliesPage from "../pages/admin/FamiliesPage";
 import ExportPage from "../pages/admin/ExportPage";
 import SettingsPage from "../pages/admin/SettingsPage";
 import ReviewPage from "../pages/family/ReviewPage";
+import ForgotPasswordPage from "../pages/public/ForgotPasswordPage";
 
 function AppRoutes() {
   return (
@@ -28,6 +29,10 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route
+  path="/forgot-password"
+  element={<ForgotPasswordPage />}
+/>
       </Route>
 
       <Route path="/family" element={<FamilyLayout />}>

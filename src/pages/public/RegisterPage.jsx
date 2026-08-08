@@ -16,6 +16,7 @@ function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -30,7 +31,7 @@ function RegisterPage() {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (form.password.length < 8) {
@@ -43,10 +44,61 @@ function RegisterPage() {
       return;
     }
 
-    // لاحقًا سيتم الربط مع:
-    // POST /api/auth/register
+    setLoading(true);
+    setErrorMessage("");
 
-    navigate("/login");
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/auth/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            full_name: form.fullName.trim(),
+            national_id: form.nationalId.trim(),
+            phone: form.phone.trim(),
+            password: form.password,
+          }),
+        },
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            "تعذر إنشاء الحساب، حاول مرة أخرى.",
+        );
+      }
+
+      const token = data.token || data.data?.token;
+      const user = data.user || data.data?.user || {};
+      const family = data.family || data.data?.family || {};
+
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("family", JSON.stringify(family));
+
+      navigate("/family/basic-info");
+    } catch (requestError) {
+      if (requestError instanceof TypeError) {
+        setErrorMessage(
+          "تعذر الاتصال بالخادم. تأكد أن الـBackend يعمل على المنفذ 5000.",
+        );
+      } else {
+        setErrorMessage(
+          requestError.message || "حدث خطأ أثناء إنشاء الحساب.",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,8 +157,10 @@ function RegisterPage() {
                   value={form.fullName}
                   onChange={handleChange}
                   required
+                  disabled={loading}
+                  autoComplete="name"
                   placeholder="الاسم الأول والثاني والثالث والعائلة"
-                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pr-11 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pr-11 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8] disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <svg
@@ -141,8 +195,10 @@ function RegisterPage() {
                   value={form.nationalId}
                   onChange={handleChange}
                   required
+                  disabled={loading}
+                  autoComplete="username"
                   placeholder="123456789"
-                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pr-11 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pr-11 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8] disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <svg
@@ -177,8 +233,10 @@ function RegisterPage() {
                   value={form.phone}
                   onChange={handleChange}
                   required
+                  disabled={loading}
+                  autoComplete="tel"
                   placeholder="05XXXXXXXX"
-                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pr-11 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pr-11 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8] disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <svg
@@ -212,19 +270,21 @@ function RegisterPage() {
                   value={form.password}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                   minLength={8}
                   autoComplete="new-password"
                   placeholder="أدخل كلمة المرور"
-                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pl-12 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pl-12 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8] disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <button
                   type="button"
+                  disabled={loading}
                   aria-label={
                     showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"
                   }
                   onClick={() => setShowPassword((current) => !current)}
-                  className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632]"
+                  className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {showPassword ? "إخفاء" : "إظهار"}
                 </button>
@@ -248,14 +308,16 @@ function RegisterPage() {
                   value={form.confirmPassword}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                   minLength={8}
                   autoComplete="new-password"
                   placeholder="أعد إدخال كلمة المرور"
-                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pl-12 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                  className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pl-12 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8] disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <button
                   type="button"
+                  disabled={loading}
                   aria-label={
                     showConfirmPassword
                       ? "إخفاء تأكيد كلمة المرور"
@@ -264,7 +326,7 @@ function RegisterPage() {
                   onClick={() =>
                     setShowConfirmPassword((current) => !current)
                   }
-                  className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632]"
+                  className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {showConfirmPassword ? "إخفاء" : "إظهار"}
                 </button>
@@ -287,24 +349,32 @@ function RegisterPage() {
 
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-[#142947]"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-[#142947] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              إنشاء الحساب
+              {loading ? "جاري إنشاء الحساب..." : "إنشاء الحساب"}
 
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path
-                  d="M19 12H5M10 7l-5 5 5 5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              {loading ? (
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"
                 />
-              </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M19 12H5M10 7l-5 5 5 5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
             </button>
           </form>
 

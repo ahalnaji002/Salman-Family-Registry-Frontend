@@ -3,15 +3,93 @@ import { useNavigate } from "react-router";
 
 function HomePage() {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = (event) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [form, setForm] = useState({
+    nationalId: "",
+    password: "",
+    rememberMe: false,
+  });
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  const handleLogin = async (event) => {
     event.preventDefault();
 
-    // لاحقًا سيتم ربطه بالـ Backend:
-    // POST /api/auth/login
+    setLoading(true);
+    setError("");
 
-    navigate("/login");
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            national_id: form.nationalId.trim(),
+            password: form.password,
+          }),
+        },
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            "رقم الهوية أو كلمة المرور غير صحيحة",
+        );
+      }
+
+      const token = data.token || data.data?.token;
+      const user = data.user || data.data?.user || {};
+
+      if (!token) {
+        throw new Error("لم يتم استلام رمز تسجيل الدخول من الخادم");
+      }
+
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+
+      if (form.rememberMe) {
+        localStorage.setItem("token", token);
+      } else {
+        sessionStorage.setItem("token", token);
+      }
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      navigate("/family");
+    } catch (requestError) {
+      if (requestError instanceof TypeError) {
+        setError(
+          "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
+        );
+      } else {
+        setError(
+          requestError.message || "حدث خطأ أثناء تسجيل الدخول",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -131,9 +209,13 @@ function HomePage() {
                     name="nationalId"
                     type="text"
                     inputMode="numeric"
+                    value={form.nationalId}
+                    onChange={handleChange}
                     required
+                    disabled={loading}
+                    autoComplete="username"
                     placeholder="أدخل رقم الهوية"
-                    className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                    className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8] disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
 
@@ -150,13 +232,18 @@ function HomePage() {
                       id="homePassword"
                       name="password"
                       type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={handleChange}
                       required
+                      disabled={loading}
+                      autoComplete="current-password"
                       placeholder="أدخل كلمة المرور"
-                      className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pl-12 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8]"
+                      className="w-full rounded-xl border border-[#dfd1b7] bg-[#fffaf2] px-4 py-3 pl-12 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#eadfc8] disabled:cursor-not-allowed disabled:opacity-60"
                     />
 
                     <button
                       type="button"
+                      disabled={loading}
                       aria-label={
                         showPassword
                           ? "إخفاء كلمة المرور"
@@ -165,7 +252,7 @@ function HomePage() {
                       onClick={() =>
                         setShowPassword((current) => !current)
                       }
-                      className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632]"
+                      className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {showPassword ? (
                         <svg
@@ -202,25 +289,45 @@ function HomePage() {
                     <input
                       type="checkbox"
                       name="rememberMe"
+                      checked={form.rememberMe}
+                      onChange={handleChange}
+                      disabled={loading}
                       className="h-4 w-4 rounded border-slate-300"
                     />
                     تذكرني
                   </label>
 
                   <button
-                    type="button"
-                    onClick={() => navigate("/login")}
-                    className="font-semibold text-[#031632] hover:underline"
-                  >
-                    نسيت كلمة المرور؟
-                  </button>
+  type="button"
+  onClick={() => navigate("/forgot-password")}
+  className="font-semibold text-[#031632] hover:underline"
+>
+  نسيت كلمة المرور؟
+</button>
                 </div>
+
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
+                  >
+                    {error}
+                  </div>
+                )}
 
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-[#142947]"
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-[#142947] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  دخول
+                  {loading ? "جاري تسجيل الدخول..." : "دخول"}
+
+                  {loading && (
+                    <span
+                      aria-hidden="true"
+                      className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    />
+                  )}
                 </button>
               </form>
 

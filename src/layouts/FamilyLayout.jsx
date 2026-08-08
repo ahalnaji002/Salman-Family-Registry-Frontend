@@ -1,39 +1,53 @@
-import { Link, Outlet, useLocation } from "react-router";
+import { useEffect, useState } from "react";
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router";
+
 import logo from "../assets/images/salman-family-logo.png";
 
 const formSteps = [
   {
     number: 1,
+    key: "basic-info",
     title: "البيانات الأساسية",
     path: "/family/basic-info",
   },
   {
     number: 2,
+    key: "wives",
     title: "الزوجات",
     path: "/family/wives",
   },
   {
     number: 3,
+    key: "housing",
     title: "السكن",
     path: "/family/housing",
   },
   {
     number: 4,
+    key: "children",
     title: "الأبناء",
     path: "/family/children",
   },
   {
     number: 5,
+    key: "special-cases",
     title: "الحالات الخاصة",
     path: "/family/special-cases",
   },
   {
     number: 6,
+    key: "married-daughters",
     title: "البنات المتزوجات",
     path: "/family/married-daughters",
   },
   {
     number: 7,
+    key: "review",
     title: "المراجعة",
     path: "/family/review",
   },
@@ -41,23 +55,175 @@ const formSteps = [
 
 function FamilyLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const [familyData, setFamilyData] = useState(null);
+  const [completionData, setCompletionData] = useState(null);
+
+  const token =
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
+
+  useEffect(() => {
+    const loadLayoutData = async () => {
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      try {
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        };
+
+        const [familyResponse, completionResponse] =
+          await Promise.all([
+            fetch("http://localhost:5000/api/family", {
+              headers,
+            }),
+            fetch(
+              "http://localhost:5000/api/family/completion",
+              {
+                headers,
+              },
+            ),
+          ]);
+
+        if (
+          familyResponse.status === 401 ||
+          completionResponse.status === 401
+        ) {
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          localStorage.removeItem("user");
+          localStorage.removeItem("family");
+
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        const familyResult = await familyResponse
+          .json()
+          .catch(() => ({}));
+
+        const completionResult =
+          await completionResponse
+            .json()
+            .catch(() => ({}));
+
+        if (familyResponse.ok) {
+          setFamilyData(familyResult.data || null);
+        }
+
+        if (completionResponse.ok) {
+          setCompletionData(
+            completionResult.data || null,
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Family layout loading error:",
+          error,
+        );
+      }
+    };
+
+    loadLayoutData();
+  }, [navigate, token, location.pathname]);
+
+  const family = familyData?.family || null;
+
+  const completionSections =
+    completionData?.sections || [];
+
+  const getCompletionSection = (key) =>
+    completionSections.find(
+      (section) => section.key === key,
+    );
+
+  const familyHeadCompleted = Boolean(
+    getCompletionSection("family_head")?.completed,
+  );
+
+  const personalPhotoCompleted = Boolean(
+    getCompletionSection("personal_photo")?.completed,
+  );
+
+  const basicInfoCompleted =
+    familyHeadCompleted && personalPhotoCompleted;
+
+  const wivesSection =
+    getCompletionSection("wives");
+
+  const wivesRequired =
+    wivesSection?.required ??
+    family?.marital_status === "married";
+
+  const wivesCompleted =
+    wivesRequired &&
+    Boolean(wivesSection?.completed);
+
+  const housingCompleted = Boolean(
+    getCompletionSection("housing")?.completed,
+  );
+
+  const childrenCompleted = Boolean(
+    getCompletionSection("children")?.completed,
+  );
+
+  const specialCasesCompleted =
+    (familyData?.special_cases?.length || 0) > 0;
+
+  const marriedDaughtersCompleted =
+    (familyData?.married_daughters?.length || 0) > 0;
+
+  const reviewCompleted =
+    Number(completionData?.percentage || 0) === 100;
+
+  const stepCompletion = {
+    "basic-info": basicInfoCompleted,
+    wives: wivesCompleted,
+    housing: housingCompleted,
+    children: childrenCompleted,
+    "special-cases": specialCasesCompleted,
+    "married-daughters": marriedDaughtersCompleted,
+    review: reviewCompleted,
+  };
 
   const isStepActive = (step) => {
     return location.pathname.startsWith(step.path);
   };
 
+  const isStepCompleted = (step) => {
+    return Boolean(stepCompletion[step.key]);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("family");
+
+    navigate("/", { replace: true });
+  };
+
   return (
     <div
       dir="rtl"
-      className="flex min-h-screen flex-col bg-[linear-gradient(135deg,#fdfaf5_0%,#ffffff_48%,#f8f8fe_100%)] text-[#031632]"
+      className="flex min-h-screen flex-col bg-[#fffdfa]"
     >
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex min-h-[76px] w-full max-w-7xl items-center justify-between gap-4 px-5 md:px-8">
-          <Link to="/family" className="flex items-center gap-3">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+          <Link
+            to="/family"
+            className="flex items-center gap-3"
+          >
             <img
               src={logo}
-              alt="شعار عائلة سلمان"
-              className="h-12 w-12 rounded-full bg-white object-contain"
+              alt="عائلة سلمان"
+              className="h-12 w-12 object-contain"
             />
 
             <div>
@@ -74,18 +240,21 @@ function FamilyLayout() {
           <div className="flex items-center gap-3">
             <div className="hidden text-left sm:block">
               <p className="text-sm font-bold text-[#031632]">
-                محمد أحمد سلمان
+                {family?.full_name || "رب الأسرة"}
               </p>
 
-              <p className="text-xs text-slate-500">رب الأسرة</p>
+              <p className="text-xs text-slate-500">
+                رب الأسرة
+              </p>
             </div>
 
-            <Link
-              to="/"
+            <button
+              type="button"
+              onClick={handleLogout}
               className="rounded-xl bg-[#f1f4f8] px-4 py-2.5 text-sm font-semibold text-[#031632] transition hover:bg-[#e7ebf1]"
             >
               تسجيل الخروج
-            </Link>
+            </button>
           </div>
         </div>
       </header>
@@ -96,6 +265,8 @@ function FamilyLayout() {
             <div className="flex min-w-[980px] items-start">
               {formSteps.map((step, index) => {
                 const active = isStepActive(step);
+                const completed =
+                  isStepCompleted(step);
 
                 return (
                   <div
@@ -110,7 +281,9 @@ function FamilyLayout() {
                         className={`flex h-12 w-12 items-center justify-center rounded-full text-base font-bold shadow-sm transition ${
                           active
                             ? "bg-[#031632] text-white"
-                            : "bg-[#f6dca3] text-[#031632] group-hover:bg-[#031632] group-hover:text-white"
+                            : completed
+                              ? "bg-[#f6dca3] text-[#031632]"
+                              : "bg-slate-200 text-slate-500 group-hover:bg-slate-300 group-hover:text-[#031632]"
                         }`}
                       >
                         {step.number}
@@ -120,15 +293,24 @@ function FamilyLayout() {
                         className={`mt-3 whitespace-nowrap text-sm font-bold transition ${
                           active
                             ? "text-[#031632]"
-                            : "text-slate-700 group-hover:text-[#031632]"
+                            : completed
+                              ? "text-[#031632]"
+                              : "text-slate-500 group-hover:text-[#031632]"
                         }`}
                       >
                         {step.title}
                       </p>
                     </Link>
 
-                    {index < formSteps.length - 1 && (
-                      <div className="mt-6 h-[2px] flex-1 bg-[#ead39e]" />
+                    {index <
+                      formSteps.length - 1 && (
+                      <div
+                        className={`mt-6 h-[2px] flex-1 ${
+                          completed
+                            ? "bg-[#ead39e]"
+                            : "bg-slate-200"
+                        }`}
+                      />
                     )}
                   </div>
                 );
@@ -144,9 +326,13 @@ function FamilyLayout() {
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-5 py-5 text-center text-sm text-slate-500 md:flex-row md:px-8">
-          <p>© 2026 جميع الحقوق محفوظة لعائلة سلمان</p>
+          <p>
+            © 2026 جميع الحقوق محفوظة لعائلة سلمان
+          </p>
 
-          <p className="md:mr-auto">تصميم ومعالجة / أحمد مسعود</p>
+          <p className="md:mr-auto">
+            تصميم ومعالجة / أحمد مسعود
+          </p>
         </div>
       </footer>
     </div>
