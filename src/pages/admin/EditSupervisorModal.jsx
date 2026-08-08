@@ -7,20 +7,29 @@ function EditSupervisorModal({
   onSave,
 }) {
   const [form, setForm] = useState({
-    name: "",
+    fullName: "",
     nationalId: "",
     phone: "",
-    permissions: "عرض وتصدير",
   });
+
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (supervisor) {
       setForm({
-        name: supervisor.name,
-        nationalId: supervisor.nationalId,
-        phone: supervisor.phone,
-        permissions: supervisor.permissions,
+        fullName:
+          supervisor.full_name ||
+          supervisor.name ||
+          "",
+        nationalId:
+          supervisor.national_id ||
+          supervisor.nationalId ||
+          "",
+        phone: supervisor.phone || "",
       });
+
+      setErrorMessage("");
     }
   }, [supervisor]);
 
@@ -31,33 +40,94 @@ function EditSupervisorModal({
   const handleChange = (event) => {
     const { name, value } = event.target;
 
+    let nextValue = value;
+
+    if (name === "nationalId") {
+      nextValue = value
+        .replace(/\D/g, "")
+        .slice(0, 9);
+    }
+
     setForm((current) => ({
       ...current,
-      [name]: value,
+      [name]: nextValue,
     }));
+
+    setErrorMessage("");
   };
 
-  const handleSubmit = (event) => {
+  const handleClose = () => {
+    if (loading) {
+      return;
+    }
+
+    setErrorMessage("");
+    onClose();
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    onSave({
-      ...supervisor,
-      ...form,
-    });
+    if (loading) {
+      return;
+    }
 
-    onClose();
+    const fullName = form.fullName.trim();
+    const phone = form.phone.trim();
+
+    if (!fullName) {
+      setErrorMessage(
+        "يرجى إدخال اسم المشرف.",
+      );
+      return;
+    }
+
+    if (!/^\d{9}$/.test(form.nationalId)) {
+      setErrorMessage(
+        "رقم الهوية يجب أن يتكون من 9 أرقام.",
+      );
+      return;
+    }
+
+    if (!phone) {
+      setErrorMessage(
+        "يرجى إدخال رقم الجوال.",
+      );
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage("");
+
+    try {
+      await onSave?.({
+        ...supervisor,
+        full_name: fullName,
+        national_id: form.nationalId,
+        phone,
+      });
+
+      onClose();
+    } catch (error) {
+      setErrorMessage(
+        error.message ||
+          "حدث خطأ أثناء تعديل بيانات المشرف.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div
       dir="rtl"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 px-4 py-8"
     >
       <button
         type="button"
         aria-label="إغلاق النافذة"
-        onClick={onClose}
-        className="absolute inset-0"
+        onClick={handleClose}
+        className="absolute inset-0 cursor-default"
       />
 
       <section className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
@@ -67,21 +137,27 @@ function EditSupervisorModal({
               تعديل بيانات المشرف
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
-              عدّل البيانات أو الصلاحيات ثم احفظ التغييرات
+            <p className="mt-1 text-sm leading-7 text-slate-500">
+              عدّل البيانات الأساسية للمشرف ثم
+              احفظ التغييرات.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-2xl text-slate-500 hover:bg-slate-100"
+            aria-label="إغلاق"
+            disabled={loading}
+            onClick={handleClose}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-2xl text-slate-500 transition hover:bg-slate-100 hover:text-[#031632] disabled:cursor-not-allowed disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
-        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+        <form
+          className="mt-5 space-y-4"
+          onSubmit={handleSubmit}
+        >
           <div>
             <label
               htmlFor="editSupervisorName"
@@ -92,12 +168,13 @@ function EditSupervisorModal({
 
             <input
               id="editSupervisorName"
-              name="name"
+              name="fullName"
               type="text"
-              value={form.name}
+              value={form.fullName}
               onChange={handleChange}
               required
-              className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
+              disabled={loading}
+              className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>
 
@@ -114,10 +191,13 @@ function EditSupervisorModal({
                 id="editSupervisorNationalId"
                 name="nationalId"
                 type="text"
+                inputMode="numeric"
+                maxLength={9}
                 value={form.nationalId}
                 onChange={handleChange}
                 required
-                className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
+                disabled={loading}
+                className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 text-left outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
 
@@ -136,45 +216,51 @@ function EditSupervisorModal({
                 value={form.phone}
                 onChange={handleChange}
                 required
-                className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
+                disabled={loading}
+                className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
           </div>
 
-          <div>
-            <label
-              htmlFor="editSupervisorPermissions"
-              className="mb-2 block font-semibold text-[#111c2c]"
+          {errorMessage && (
+            <div
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700"
             >
-              الصلاحيات
-            </label>
+              {errorMessage}
+            </div>
+          )}
 
-            <select
-              id="editSupervisorPermissions"
-              name="permissions"
-              value={form.permissions}
-              onChange={handleChange}
-              className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none focus:border-[#031632]"
-            >
-              <option value="عرض وتصدير">عرض وتصدير</option>
-              <option value="كامل الصلاحيات">كامل الصلاحيات</option>
-            </select>
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-7 text-[#34446b]">
+            تعديل صلاحيات المشرف يتم بشكل مستقل
+            عن تعديل بياناته الشخصية.
           </div>
 
           <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row">
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+              onClick={handleClose}
+              disabled={loading}
+              className="flex-1 rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               إلغاء
             </button>
 
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white hover:bg-[#1a2b48]"
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white transition hover:bg-[#1a2b48] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              حفظ التعديلات
+              {loading
+                ? "جاري الحفظ..."
+                : "حفظ التعديلات"}
+
+              {loading && (
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                />
+              )}
             </button>
           </div>
         </form>

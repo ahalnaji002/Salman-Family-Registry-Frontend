@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Link,
   Outlet,
@@ -64,72 +64,90 @@ function FamilyLayout() {
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
 
-  useEffect(() => {
-    const loadLayoutData = async () => {
-      if (!token) {
+  const loadLayoutData = useCallback(async () => {
+    if (!token) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    try {
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      };
+
+      const [familyResponse, completionResponse] =
+        await Promise.all([
+          fetch("http://localhost:5000/api/family", {
+            headers,
+          }),
+          fetch(
+            "http://localhost:5000/api/family/completion",
+            {
+              headers,
+            },
+          ),
+        ]);
+
+      if (
+        familyResponse.status === 401 ||
+        completionResponse.status === 401
+      ) {
+        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("family");
+
         navigate("/login", { replace: true });
         return;
       }
 
-      try {
-        const headers = {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        };
+      const familyResult = await familyResponse
+        .json()
+        .catch(() => ({}));
 
-        const [familyResponse, completionResponse] =
-          await Promise.all([
-            fetch("http://localhost:5000/api/family", {
-              headers,
-            }),
-            fetch(
-              "http://localhost:5000/api/family/completion",
-              {
-                headers,
-              },
-            ),
-          ]);
+      const completionResult = await completionResponse
+        .json()
+        .catch(() => ({}));
 
-        if (
-          familyResponse.status === 401 ||
-          completionResponse.status === 401
-        ) {
-          localStorage.removeItem("token");
-          sessionStorage.removeItem("token");
-          localStorage.removeItem("user");
-          localStorage.removeItem("family");
+      if (familyResponse.ok) {
+        setFamilyData(familyResult.data || null);
+      }
 
-          navigate("/login", { replace: true });
-          return;
-        }
-
-        const familyResult = await familyResponse
-          .json()
-          .catch(() => ({}));
-
-        const completionResult = await completionResponse
-          .json()
-          .catch(() => ({}));
-
-        if (familyResponse.ok) {
-          setFamilyData(familyResult.data || null);
-        }
-
-        if (completionResponse.ok) {
-          setCompletionData(
-            completionResult.data || null,
-          );
-        }
-      } catch (error) {
-        console.error(
-          "Family layout loading error:",
-          error,
+      if (completionResponse.ok) {
+        setCompletionData(
+          completionResult.data || null,
         );
       }
+    } catch (error) {
+      console.error(
+        "Family layout loading error:",
+        error,
+      );
+    }
+  }, [navigate, token]);
+
+  useEffect(() => {
+    loadLayoutData();
+  }, [loadLayoutData, location.pathname]);
+
+  useEffect(() => {
+    const handleFamilyDataUpdated = () => {
+      loadLayoutData();
     };
 
-    loadLayoutData();
-  }, [navigate, token, location.pathname]);
+    window.addEventListener(
+      "family-data-updated",
+      handleFamilyDataUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "family-data-updated",
+        handleFamilyDataUpdated,
+      );
+    };
+  }, [loadLayoutData]);
 
   const family = familyData?.family || null;
 
@@ -215,10 +233,10 @@ function FamilyLayout() {
   return (
     <div
       dir="rtl"
-      className="flex min-h-screen flex-col bg-[#fffdf9]"
+      className="flex min-h-screen flex-col bg-[#f8f8fe] text-[#031632]"
     >
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+        <div className="mx-auto flex min-h-[76px] w-full max-w-7xl items-center justify-between gap-4 px-5 md:px-8">
           <Link
             to="/family"
             className="flex items-center gap-3"
@@ -226,7 +244,7 @@ function FamilyLayout() {
             <img
               src={logo}
               alt="شعار عائلة سلمان"
-              className="h-12 w-12 object-contain"
+              className="h-12 w-12 rounded-full bg-white object-contain"
             />
 
             <div>

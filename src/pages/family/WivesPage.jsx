@@ -149,6 +149,8 @@ function WivesPage() {
       setWives(
         apiWives.map(mapWifeFromApi),
       );
+
+      setIsSaved(true);
     } catch (requestError) {
       if (
         requestError instanceof TypeError
@@ -199,6 +201,7 @@ function WivesPage() {
     );
 
     setErrors({});
+    setIsSaved(true);
   };
 
   const handleWifeFormChange = (
@@ -426,14 +429,20 @@ function WivesPage() {
 
       await loadWives();
 
-      handleCloseModal();
-
+      setIsModalOpen(false);
+      setEditingWifeId(null);
+      setWifeForm(initialWifeForm);
+      setErrors({});
       setIsSaved(true);
 
       setSuccessMessage(
         isEditing
           ? "تم تعديل بيانات الزوجة بنجاح."
           : "تمت إضافة الزوجة بنجاح.",
+      );
+
+      window.dispatchEvent(
+        new Event("family-data-updated"),
       );
     } catch (requestError) {
       setPageError(
@@ -544,6 +553,10 @@ function WivesPage() {
 
       setSuccessMessage(
         "تم حذف بيانات الزوجة بنجاح.",
+      );
+
+      window.dispatchEvent(
+        new Event("family-data-updated"),
       );
     } catch (requestError) {
       setPageError(

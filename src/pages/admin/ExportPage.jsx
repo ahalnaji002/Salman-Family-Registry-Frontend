@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const API_BASE_URL = "http://localhost:5000";
 
 const exportContents = [
   {
@@ -27,20 +29,6 @@ const exportContents = [
   },
 ];
 
-const exportStats = [
-  {
-    label: "عدد الأسر المطابقة",
-    value: "1,245",
-  },
-  {
-    label: "عدد الأفراد",
-    value: "6,832",
-  },
-  {
-    label: "حجم الملف المتوقع",
-    value: "12 MB",
-  },
-];
 
 function FilterIcon() {
   return (
@@ -164,6 +152,10 @@ function ExportPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [familiesCount, setFamiliesCount] = useState(0);
+  const [membersCount, setMembersCount] = useState(0);
+  const [fileSize, setFileSize] = useState("—");
 
   const resetFilters = () => {
     setRegion("الكل");
@@ -172,15 +164,244 @@ function ExportPage() {
     setEndDate("");
   };
 
-  const handleExport = () => {
+  const getAdminToken = () =>
+    localStorage.getItem("adminToken") ||
+    sessionStorage.getItem("adminToken");
+
+  const clearAdminSession = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+    sessionStorage.removeItem("adminToken");
+    sessionStorage.removeItem("adminUser");
+  };
+
+  const buildFiltersQuery = () => {
+    const query = new URLSearchParams();
+
+    if (status === "مكتملة") {
+      query.set("status", "submitted");
+    } else if (status === "غير مكتملة") {
+      query.set("status", "draft");
+    }
+
+    const regionValues = {
+      "شمال غزة": "north_gaza",
+      غزة: "gaza",
+      "المنطقة الوسطى": "middle_area",
+      "جنوب غزة": "south_gaza",
+    };
+
+    if (region !== "الكل" && regionValues[region]) {
+      query.set("region", regionValues[region]);
+    }
+
+    if (startDate) {
+      query.set("start_date", startDate);
+    }
+
+    if (endDate) {
+      query.set("end_date", endDate);
+    }
+
+    return query;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+      return "—";
+    }
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    const kilobytes = bytes / 1024;
+
+    if (kilobytes < 1024) {
+      return `${kilobytes.toFixed(1)} KB`;
+    }
+
+    return `${(kilobytes / 1024).toFixed(2)} MB`;
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchExportStats = async () => {
+      const token = getAdminToken();
+
+      if (!token) {
+        clearAdminSession();
+        window.location.href = "/admin/login";
+        return;
+      }
+
+      if (startDate && endDate && startDate > endDate) {
+        setFamiliesCount(0);
+        setMembersCount(0);
+        setIsLoadingStats(false);
+        setFileSize("—");
+        return;
+      }
+
+      setIsLoadingStats(true);
+      setFileSize("—");
+
+      try {
+        const queryString = buildFiltersQuery().toString();
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/admin/export/families/stats${
+            queryString ? `?${queryString}` : ""
+          }`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+            signal: controller.signal,
+          },
+        );
+
+        if (response.status === 401) {
+          clearAdminSession();
+          window.location.href = "/admin/login";
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 403) {
+          throw new Error(
+            data.message || "ليس لديك صلاحية لعرض إحصائيات التصدير.",
+          );
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "حدث خطأ أثناء جلب إحصائيات التصدير.",
+          );
+        }
+
+        setFamiliesCount(Number(data.data?.families_count) || 0);
+        setMembersCount(Number(data.data?.members_count) || 0);
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
+        setFamiliesCount(0);
+        setMembersCount(0);
+        console.error("Export stats error:", error);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingStats(false);
+        }
+      }
+    };
+
+    fetchExportStats();
+
+    return () => {
+      controller.abort();
+    };
+  }, [region, status, startDate, endDate]);
+
+  const handleExport = async () => {
+    if (isExporting) {
+      return;
+    }
+
+    if (startDate && endDate && startDate > endDate) {
+      window.alert("تاريخ البداية يجب أن يكون قبل تاريخ النهاية.");
+      return;
+    }
+
+    const token = getAdminToken();
+
+    if (!token) {
+      clearAdminSession();
+      window.location.href = "/admin/login";
+      return;
+    }
+
     setIsExporting(true);
 
-    // لاحقًا نربطه مع Backend:
-    // GET /api/admin/export/families
+    try {
+      const queryString = buildFiltersQuery().toString();
 
-    window.setTimeout(() => {
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/export/families${
+          queryString ? `?${queryString}` : ""
+        }`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          },
+        },
+      );
+
+      if (response.status === 401) {
+        clearAdminSession();
+        window.location.href = "/admin/login";
+        return;
+      }
+
+      if (response.status === 403) {
+        const data = await response.json().catch(() => ({}));
+
+        throw new Error(
+          data.message || "ليس لديك صلاحية لتصدير البيانات.",
+        );
+      }
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+
+        throw new Error(
+          data.message || "حدث خطأ أثناء تصدير البيانات.",
+        );
+      }
+
+      const blob = await response.blob();
+
+      setFileSize(formatFileSize(blob.size));
+
+      const contentDisposition =
+        response.headers.get("Content-Disposition");
+
+      const fileNameMatch = contentDisposition?.match(
+        /filename="?([^";]+)"?/i,
+      );
+
+      const fileName =
+        fileNameMatch?.[1] ||
+        `salman-families-${new Date()
+          .toISOString()
+          .slice(0, 10)}.xlsx`;
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+
+      anchor.href = downloadUrl;
+      anchor.download = fileName;
+
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      window.alert(
+        error.message || "حدث خطأ أثناء تصدير البيانات.",
+      );
+    } finally {
       setIsExporting(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -360,30 +581,47 @@ function ExportPage() {
           </div>
 
           <div className="mt-7 grid overflow-hidden rounded-2xl border border-[#d7e2ff] bg-[#f8f9ff] sm:grid-cols-3">
-            {exportStats.map((stat, index) => (
-              <div
-                key={stat.label}
-                className={`p-5 text-center ${
-                  index !== exportStats.length - 1
-                    ? "border-b border-[#d7e2ff] sm:border-b-0 sm:border-l"
-                    : ""
-                }`}
-              >
-                <p
-                  className={`text-3xl font-bold ${
-                    index === 2
-                      ? "text-amber-800"
-                      : "text-[#031632]"
-                  }`}
-                >
-                  {stat.value}
-                </p>
+            {[
+  {
+    label: "عدد الأسر المطابقة",
+    value: isLoadingStats
+      ? "..."
+      : familiesCount.toLocaleString("en-US"),
+  },
+  {
+    label: "عدد الأفراد",
+    value: isLoadingStats
+      ? "..."
+      : membersCount.toLocaleString("en-US"),
+  },
+  {
+    label: "حجم الملف",
+    value: fileSize,
+  },
+].map((stat, index, stats) => (
+  <div
+    key={stat.label}
+    className={`p-5 text-center ${
+      index !== stats.length - 1
+        ? "border-b border-[#d7e2ff] sm:border-b-0 sm:border-l"
+        : ""
+    }`}
+  >
+    <p
+      className={`text-3xl font-bold ${
+        index === 2
+          ? "text-amber-800"
+          : "text-[#031632]"
+      }`}
+    >
+      {stat.value}
+    </p>
 
-                <p className="mt-2 text-sm text-slate-600">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
+    <p className="mt-2 text-sm text-slate-600">
+      {stat.label}
+    </p>
+  </div>
+))}
           </div>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_2fr]">

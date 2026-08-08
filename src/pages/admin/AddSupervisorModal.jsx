@@ -1,218 +1,182 @@
 import { useState } from "react";
 
-const initialForm = {
-  fullName: "",
-  nationalId: "",
-  phone: "",
-  password: "",
-  permissions: "view_export",
-};
-
-function AddSupervisorModal({ isOpen, onClose, onAdd }) {
-  const [form, setForm] = useState(initialForm);
-  const [showPassword, setShowPassword] = useState(false);
+function AddSupervisorModal({
+  isOpen,
+  onClose,
+  onAdd,
+}) {
+  const [nationalId, setNationalId] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) {
     return null;
   }
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const handleNationalIdChange = (event) => {
+    const value = event.target.value
+      .replace(/\D/g, "")
+      .slice(0, 9);
 
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setNationalId(value);
+    setErrorMessage("");
   };
 
-  const handleSubmit = (event) => {
+  const handleClose = () => {
+    if (loading) {
+      return;
+    }
+
+    setNationalId("");
+    setErrorMessage("");
+    onClose();
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    onAdd?.({
-      id: Date.now(),
-      name: form.fullName,
-      nationalId: form.nationalId,
-      phone: form.phone,
-      status: "نشط",
-      permissions:
-        form.permissions === "full"
-          ? "كامل الصلاحيات"
-          : "عرض وتصدير",
-    });
+    if (loading) {
+      return;
+    }
 
-    setForm(initialForm);
-    onClose();
+    if (!/^\d{9}$/.test(nationalId)) {
+      setErrorMessage(
+        "يرجى إدخال رقم هوية صحيح مكون من 9 أرقام.",
+      );
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage("");
+
+    try {
+      await onAdd?.({
+        nationalId,
+      });
+
+      setNationalId("");
+      onClose();
+    } catch (error) {
+      setErrorMessage(
+        error.message ||
+          "حدث خطأ أثناء إضافة المشرف.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div
       dir="rtl"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 px-4 py-8"
     >
       <button
         type="button"
         aria-label="إغلاق النافذة"
-        onClick={onClose}
-        className="absolute inset-0"
+        onClick={handleClose}
+        className="absolute inset-0 cursor-default"
       />
 
       <section className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
             <h2 className="text-2xl font-bold text-[#031632]">
-              إضافة مشرف جديد
+              إضافة مشرف
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
-              أدخل بيانات المشرف وحدد الصلاحيات المناسبة
+            <p className="mt-1 text-sm leading-7 text-slate-500">
+              أدخل رقم هوية رب الأسرة المسجل مسبقًا
+              في النظام لتعيينه كمشرف.
             </p>
           </div>
 
           <button
             type="button"
             aria-label="إغلاق"
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-2xl text-slate-500 transition hover:bg-slate-100 hover:text-[#031632]"
+            disabled={loading}
+            onClick={handleClose}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-2xl text-slate-500 transition hover:bg-slate-100 hover:text-[#031632] disabled:cursor-not-allowed disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
-        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+        <form
+          className="mt-6 space-y-5"
+          onSubmit={handleSubmit}
+        >
           <div>
             <label
-              htmlFor="supervisorFullName"
+              htmlFor="supervisorNationalId"
               className="mb-2 block font-semibold text-[#111c2c]"
             >
-              الاسم الكامل
+              رقم هوية رب الأسرة
+              <span className="mr-1 text-red-600">
+                *
+              </span>
             </label>
 
             <input
-              id="supervisorFullName"
-              name="fullName"
+              id="supervisorNationalId"
+              name="nationalId"
               type="text"
-              value={form.fullName}
-              onChange={handleChange}
+              inputMode="numeric"
+              maxLength={9}
+              value={nationalId}
+              onChange={handleNationalIdChange}
               required
-              placeholder="أدخل الاسم الكامل"
-              className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
+              disabled={loading}
+              placeholder="أدخل رقم الهوية المكون من 9 أرقام"
+              className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 text-left outline-none transition placeholder:text-right focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
             />
+
+            <p className="mt-2 text-xs leading-6 text-slate-500">
+              يجب أن يكون المستخدم مسجلًا مسبقًا
+              كرب أسرة ونشطًا في النظام.
+            </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="supervisorNationalId"
-                className="mb-2 block font-semibold text-[#111c2c]"
-              >
-                رقم الهوية
-              </label>
-
-              <input
-                id="supervisorNationalId"
-                name="nationalId"
-                type="text"
-                inputMode="numeric"
-                value={form.nationalId}
-                onChange={handleChange}
-                required
-                placeholder="رقم الهوية"
-                className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="supervisorPhone"
-                className="mb-2 block font-semibold text-[#111c2c]"
-              >
-                رقم الجوال
-              </label>
-
-              <input
-                id="supervisorPhone"
-                name="phone"
-                type="tel"
-                value={form.phone}
-                onChange={handleChange}
-                required
-                placeholder="05xxxxxxxx"
-                className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label
-              htmlFor="supervisorPassword"
-              className="mb-2 block font-semibold text-[#111c2c]"
+          {errorMessage && (
+            <div
+              role="alert"
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700"
             >
-              كلمة المرور المؤقتة
-            </label>
-
-            <div className="relative">
-              <input
-                id="supervisorPassword"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={handleChange}
-                required
-                minLength={8}
-                autoComplete="new-password"
-                placeholder="8 أحرف على الأقل"
-                className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 pl-16 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                className="absolute inset-y-0 left-3 my-auto rounded-lg px-2 text-sm text-slate-500 hover:bg-slate-100"
-              >
-                {showPassword ? "إخفاء" : "إظهار"}
-              </button>
+              {errorMessage}
             </div>
-          </div>
+          )}
 
-          <div>
-            <label
-              htmlFor="supervisorPermissions"
-              className="mb-2 block font-semibold text-[#111c2c]"
-            >
-              الصلاحيات
-            </label>
-
-            <select
-              id="supervisorPermissions"
-              name="permissions"
-              value={form.permissions}
-              onChange={handleChange}
-              className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none focus:border-[#031632]"
-            >
-              <option value="view_export">
-                عرض الأسر وتصدير البيانات
-              </option>
-
-              <option value="full">
-                كامل الصلاحيات
-              </option>
-            </select>
+          <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-7 text-[#34446b]">
+            لن يتم إنشاء حساب جديد. سيتم إضافة
+            صلاحية المشرف إلى حساب رب الأسرة
+            الموجود بالفعل.
           </div>
 
           <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row">
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={handleClose}
+              disabled={loading}
+              className="flex-1 rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               إلغاء
             </button>
 
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white transition hover:bg-[#1a2b48]"
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white transition hover:bg-[#1a2b48] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              إضافة المشرف
+              {loading
+                ? "جاري تعيين المشرف..."
+                : "تعيين كمشرف"}
+
+              {loading && (
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                />
+              )}
             </button>
           </div>
         </form>
