@@ -31,7 +31,7 @@ function AdminLoginPage() {
     try {
       const admin = JSON.parse(storedAdmin);
 
-      if (admin?.role === "admin") {
+      if (admin?.roles?.includes("admin")) {
         navigate("/admin", {
           replace: true,
         });
@@ -116,7 +116,7 @@ function AdminLoginPage() {
         );
       }
 
-      if (user.role !== "admin") {
+      if (!user.roles?.includes("admin")) {
         throw new Error(
           "هذا الحساب لا يملك صلاحية الدخول إلى لوحة الإدارة.",
         );
@@ -252,9 +252,7 @@ function AdminLoginPage() {
                 disabled={loading}
                 autoComplete="username"
                 value={nationalId}
-                onChange={
-                  handleNationalIdChange
-                }
+                onChange={handleNationalIdChange}
                 placeholder="أدخل رقم الهوية"
                 className="block w-full rounded-lg border border-[#c5c6ce] bg-[#f9f9ff] px-4 py-3 text-left text-[#111c2c] outline-none transition placeholder:text-right focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
               />
@@ -288,9 +286,7 @@ function AdminLoginPage() {
                   disabled={loading}
                   autoComplete="current-password"
                   value={password}
-                  onChange={
-                    handlePasswordChange
-                  }
+                  onChange={handlePasswordChange}
                   placeholder="أدخل كلمة المرور"
                   className="block w-full rounded-lg border border-[#c5c6ce] bg-[#f9f9ff] px-4 py-3 pl-14 text-[#111c2c] outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
                 />

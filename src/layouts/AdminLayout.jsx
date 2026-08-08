@@ -214,13 +214,43 @@ function AdminLayout() {
 
         const user = data.data?.user;
 
-        if (!user || user.role !== "admin") {
+        const storedAdminRaw =
+          localStorage.getItem("adminUser") ||
+          sessionStorage.getItem("adminUser");
+
+        let storedAdmin = null;
+
+        try {
+          storedAdmin = storedAdminRaw
+            ? JSON.parse(storedAdminRaw)
+            : null;
+        } catch {
+          storedAdmin = null;
+        }
+
+        const userRoles = Array.isArray(user?.roles)
+          ? user.roles
+          : Array.isArray(storedAdmin?.roles)
+            ? storedAdmin.roles
+            : user?.role
+              ? [user.role]
+              : storedAdmin?.role
+                ? [storedAdmin.role]
+                : [];
+
+        if (!user || !userRoles.includes("admin")) {
           throw new Error(
             "ليس لديك صلاحية الدخول إلى لوحة الإدارة.",
           );
         }
 
-        setAdminUser(user);
+        const normalizedAdminUser = {
+          ...storedAdmin,
+          ...user,
+          roles: userRoles,
+        };
+
+        setAdminUser(normalizedAdminUser);
 
         const storage =
           localStorage.getItem("adminToken")
@@ -229,7 +259,7 @@ function AdminLayout() {
 
         storage.setItem(
           "adminUser",
-          JSON.stringify(user),
+          JSON.stringify(normalizedAdminUser),
         );
       } catch {
         clearAdminSession();
