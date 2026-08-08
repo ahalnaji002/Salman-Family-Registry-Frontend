@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-} from "react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
 
 import logo from "../assets/images/salman-family-logo.png";
 
@@ -61,8 +56,7 @@ function FamilyLayout() {
   const [completionData, setCompletionData] = useState(null);
 
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const loadLayoutData = useCallback(async () => {
     if (!token) {
@@ -76,23 +70,16 @@ function FamilyLayout() {
         Accept: "application/json",
       };
 
-      const [familyResponse, completionResponse] =
-        await Promise.all([
-          fetch("http://localhost:5000/api/family", {
-            headers,
-          }),
-          fetch(
-            "http://localhost:5000/api/family/completion",
-            {
-              headers,
-            },
-          ),
-        ]);
+      const [familyResponse, completionResponse] = await Promise.all([
+        fetch("http://localhost:5000/api/family", {
+          headers,
+        }),
+        fetch("http://localhost:5000/api/family/completion", {
+          headers,
+        }),
+      ]);
 
-      if (
-        familyResponse.status === 401 ||
-        completionResponse.status === 401
-      ) {
+      if (familyResponse.status === 401 || completionResponse.status === 401) {
         localStorage.removeItem("token");
         sessionStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -102,9 +89,7 @@ function FamilyLayout() {
         return;
       }
 
-      const familyResult = await familyResponse
-        .json()
-        .catch(() => ({}));
+      const familyResult = await familyResponse.json().catch(() => ({}));
 
       const completionResult = await completionResponse
         .json()
@@ -115,15 +100,10 @@ function FamilyLayout() {
       }
 
       if (completionResponse.ok) {
-        setCompletionData(
-          completionResult.data || null,
-        );
+        setCompletionData(completionResult.data || null);
       }
     } catch (error) {
-      console.error(
-        "Family layout loading error:",
-        error,
-      );
+      console.error("Family layout loading error:", error);
     }
   }, [navigate, token]);
 
@@ -136,10 +116,7 @@ function FamilyLayout() {
       loadLayoutData();
     };
 
-    window.addEventListener(
-      "family-data-updated",
-      handleFamilyDataUpdated,
-    );
+    window.addEventListener("family-data-updated", handleFamilyDataUpdated);
 
     return () => {
       window.removeEventListener(
@@ -151,13 +128,10 @@ function FamilyLayout() {
 
   const family = familyData?.family || null;
 
-  const completionSections =
-    completionData?.sections || [];
+  const completionSections = completionData?.sections || [];
 
   const getCompletionSection = (key) =>
-    completionSections.find(
-      (section) => section.key === key,
-    );
+    completionSections.find((section) => section.key === key);
 
   const familyHeadCompleted = Boolean(
     getCompletionSection("family_head")?.completed,
@@ -167,40 +141,31 @@ function FamilyLayout() {
     getCompletionSection("personal_photo")?.completed,
   );
 
-  const basicInfoCompleted =
-    familyHeadCompleted && personalPhotoCompleted;
+  const basicInfoCompleted = familyHeadCompleted && personalPhotoCompleted;
 
-  const wivesSection =
-    getCompletionSection("wives");
+  const wivesSection = getCompletionSection("wives");
 
   const wivesRequired =
-    wivesSection?.required ??
-    family?.marital_status === "married";
+    wivesSection?.required ?? family?.marital_status === "married";
 
-  const wivesCompleted =
-    wivesRequired &&
-    Boolean(wivesSection?.completed);
+  const wivesCompleted = wivesRequired && Boolean(wivesSection?.completed);
 
-  const housingCompleted = Boolean(
-    getCompletionSection("housing")?.completed,
-  );
+  const housingCompleted = Boolean(getCompletionSection("housing")?.completed);
 
   const childrenCompleted = Boolean(
     getCompletionSection("children")?.completed,
   );
 
-  const specialCasesCompleted =
-    (familyData?.special_cases?.length || 0) > 0;
+  const specialCasesCompleted = (familyData?.special_cases?.length || 0) > 0;
 
   const marriedDaughtersCompleted =
     (familyData?.married_daughters?.length || 0) > 0;
 
   // المراجعة لا تعتبر مكتملة لمجرد وصول النسبة إلى 100%
   // تعتبر مكتملة فقط بعد إرسال النموذج أو اعتماده
-  const reviewCompleted = [
-    "submitted",
-    "approved",
-  ].includes(family?.form_status);
+  const reviewCompleted = ["submitted", "approved"].includes(
+    family?.form_status,
+  );
 
   const stepCompletion = {
     "basic-info": basicInfoCompleted,
@@ -237,10 +202,7 @@ function FamilyLayout() {
     >
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex min-h-[76px] w-full max-w-7xl items-center justify-between gap-4 px-5 md:px-8">
-          <Link
-            to="/family"
-            className="flex items-center gap-3"
-          >
+          <Link to="/family" className="flex items-center gap-3">
             <img
               src={logo}
               alt="شعار عائلة سلمان"
@@ -264,9 +226,7 @@ function FamilyLayout() {
                 {family?.full_name || "رب الأسرة"}
               </p>
 
-              <p className="text-xs text-slate-500">
-                رب الأسرة
-              </p>
+              <p className="text-xs text-slate-500">رب الأسرة</p>
             </div>
 
             <button
@@ -286,8 +246,7 @@ function FamilyLayout() {
             <div className="flex min-w-[980px] items-start">
               {formSteps.map((step, index) => {
                 const active = isStepActive(step);
-                const completed =
-                  isStepCompleted(step);
+                const completed = isStepCompleted(step);
 
                 return (
                   <div
@@ -323,13 +282,10 @@ function FamilyLayout() {
                       </p>
                     </Link>
 
-                    {index <
-                      formSteps.length - 1 && (
+                    {index < formSteps.length - 1 && (
                       <div
                         className={`mt-6 h-[2px] flex-1 ${
-                          completed
-                            ? "bg-[#ead39e]"
-                            : "bg-slate-200"
+                          completed ? "bg-[#ead39e]" : "bg-slate-200"
                         }`}
                       />
                     )}
@@ -347,13 +303,9 @@ function FamilyLayout() {
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-5 py-5 text-center text-sm text-slate-500 md:flex-row md:px-8">
-          <p>
-            © 2026 جميع الحقوق محفوظة لعائلة سلمان
-          </p>
+          <p>© 2026 جميع الحقوق محفوظة لعائلة سلمان</p>
 
-          <p className="md:mr-auto">
-            تصميم ومعالجة / أحمد مسعود
-          </p>
+          <p className="md:mr-auto">تصميم ومعالجة / أحمد مسعود</p>
         </div>
       </footer>
     </div>
