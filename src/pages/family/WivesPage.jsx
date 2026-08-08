@@ -34,8 +34,7 @@ function WivesPage() {
   const [isSaved, setIsSaved] = useState(false);
 
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const getAuthHeaders = () => ({
     Authorization: `Bearer ${token}`,
@@ -65,46 +64,32 @@ function WivesPage() {
   const mapWifeFromApi = (wife) => {
     const employmentStatus = wife.employment_status || "";
 
-    const knownEmploymentStatuses = [
-      "housewife",
-      "employee",
-    ];
+    const knownEmploymentStatuses = ["housewife", "employee"];
 
     return {
       id: wife.id,
 
       fullName: wife.full_name || "",
 
-      nationalId:
-        wife.national_id || "",
+      nationalId: wife.national_id || "",
 
-      dateOfBirth: normalizeDate(
-        wife.date_of_birth,
-      ),
+      dateOfBirth: normalizeDate(wife.date_of_birth),
 
       phone: wife.phone || "",
 
-      previousFamilyName:
-        wife.previous_family_name || "",
+      previousFamilyName: wife.previous_family_name || "",
 
-      employmentStatus:
-        knownEmploymentStatuses.includes(
-          employmentStatus,
-        )
-          ? employmentStatus
-          : employmentStatus
-            ? "other"
-            : "",
+      employmentStatus: knownEmploymentStatuses.includes(employmentStatus)
+        ? employmentStatus
+        : employmentStatus
+          ? "other"
+          : "",
 
-      otherEmploymentStatus:
-        knownEmploymentStatuses.includes(
-          employmentStatus,
-        )
-          ? ""
-          : employmentStatus,
+      otherEmploymentStatus: knownEmploymentStatuses.includes(employmentStatus)
+        ? ""
+        : employmentStatus,
 
-      originalEmploymentStatus:
-        employmentStatus,
+      originalEmploymentStatus: employmentStatus,
     };
   };
 
@@ -118,16 +103,11 @@ function WivesPage() {
     setPageError("");
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/family/wives`,
-        {
-          headers: getAuthHeaders(),
-        },
-      );
+      const response = await fetch(`${API_BASE_URL}/api/family/wives`, {
+        headers: getAuthHeaders(),
+      });
 
-      const data = await response
-        .json()
-        .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
         handleUnauthorized();
@@ -135,33 +115,20 @@ function WivesPage() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "تعذر تحميل بيانات الزوجات.",
-        );
+        throw new Error(data.message || "تعذر تحميل بيانات الزوجات.");
       }
 
-      const apiWives =
-        data.data?.wives ||
-        data.wives ||
-        [];
+      const apiWives = data.data?.wives || data.wives || [];
 
-      setWives(
-        apiWives.map(mapWifeFromApi),
-      );
+      setWives(apiWives.map(mapWifeFromApi));
 
       setIsSaved(true);
     } catch (requestError) {
-      if (
-        requestError instanceof TypeError
-      ) {
-        setPageError(
-          "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.",
-        );
+      if (requestError instanceof TypeError) {
+        setPageError("تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.");
       } else {
         setPageError(
-          requestError.message ||
-            "حدث خطأ أثناء تحميل بيانات الزوجات.",
+          requestError.message || "حدث خطأ أثناء تحميل بيانات الزوجات.",
         );
       }
     } finally {
@@ -176,9 +143,7 @@ function WivesPage() {
   const handleAddWife = () => {
     setEditingWifeId(null);
 
-    setWifeForm(
-      initialWifeForm,
-    );
+    setWifeForm(initialWifeForm);
 
     setErrors({});
     setPageError("");
@@ -196,66 +161,48 @@ function WivesPage() {
 
     setEditingWifeId(null);
 
-    setWifeForm(
-      initialWifeForm,
-    );
+    setWifeForm(initialWifeForm);
 
     setErrors({});
     setIsSaved(true);
   };
 
-  const handleWifeFormChange = (
-    event,
-  ) => {
-    const { name, value } =
-      event.target;
+  const handleWifeFormChange = (event) => {
+    const { name, value } = event.target;
 
     let finalValue = value;
 
     if (name === "nationalId") {
-      finalValue = value
-        .replace(/\D/g, "")
-        .slice(0, 9);
+      finalValue = value.replace(/\D/g, "").slice(0, 9);
     }
 
     if (name === "phone") {
-      finalValue = value
-        .replace(/\D/g, "")
-        .slice(0, 10);
+      finalValue = value.replace(/\D/g, "").slice(0, 10);
     }
 
-    setWifeForm(
-      (currentForm) => ({
-        ...currentForm,
+    setWifeForm((currentForm) => ({
+      ...currentForm,
 
-        [name]: finalValue,
+      [name]: finalValue,
 
-        ...(name ===
-          "employmentStatus" &&
-        finalValue !== "other"
-          ? {
-              otherEmploymentStatus:
-                "",
-            }
-          : {}),
-      }),
-    );
+      ...(name === "employmentStatus" && finalValue !== "other"
+        ? {
+            otherEmploymentStatus: "",
+          }
+        : {}),
+    }));
 
-    setErrors(
-      (currentErrors) => ({
-        ...currentErrors,
+    setErrors((currentErrors) => ({
+      ...currentErrors,
 
-        [name]: "",
+      [name]: "",
 
-        ...(name ===
-        "employmentStatus"
-          ? {
-              otherEmploymentStatus:
-                "",
-            }
-          : {}),
-      }),
-    );
+      ...(name === "employmentStatus"
+        ? {
+            otherEmploymentStatus: "",
+          }
+        : {}),
+    }));
 
     setPageError("");
     setSuccessMessage("");
@@ -268,96 +215,59 @@ function WivesPage() {
     const wifeName = wifeForm.fullName.trim();
 
     if (!wifeName) {
-      newErrors.fullName =
-        "يرجى إدخال اسم الزوجة الرباعي.";
+      newErrors.fullName = "يرجى إدخال اسم الزوجة الرباعي.";
     } else {
-      const wifeNameParts = wifeName
-        .split(/\s+/)
-        .filter(Boolean);
+      const wifeNameParts = wifeName.split(/\s+/).filter(Boolean);
 
       if (wifeNameParts.length < 4) {
-        newErrors.fullName =
-          "اسم الزوجة يجب أن يكون رباعيًا.";
+        newErrors.fullName = "اسم الزوجة يجب أن يكون رباعيًا.";
       }
     }
 
-    if (
-      !/^\d{9}$/.test(
-        wifeForm.nationalId,
-      )
-    ) {
-      newErrors.nationalId =
-        "يرجى إدخال رقم هوية مكون من 9 أرقام.";
+    if (!/^\d{9}$/.test(wifeForm.nationalId)) {
+      newErrors.nationalId = "يرجى إدخال رقم هوية مكون من 9 أرقام.";
+    }
+
+    if (!wifeForm.dateOfBirth) {
+      newErrors.dateOfBirth = "يرجى اختيار تاريخ الميلاد.";
+    }
+
+    if (!/^05\d{8}$/.test(wifeForm.phone)) {
+      newErrors.phone = "يرجى إدخال رقم جوال صحيح.";
+    }
+
+    if (!wifeForm.previousFamilyName.trim()) {
+      newErrors.previousFamilyName = "يرجى إدخال اسم العائلة السابقة.";
+    }
+
+    if (!wifeForm.employmentStatus) {
+      newErrors.employmentStatus = "يرجى اختيار الحالة الوظيفية.";
     }
 
     if (
-      !wifeForm.dateOfBirth
-    ) {
-      newErrors.dateOfBirth =
-        "يرجى اختيار تاريخ الميلاد.";
-    }
-
-    if (
-      !/^05\d{8}$/.test(
-        wifeForm.phone,
-      )
-    ) {
-      newErrors.phone =
-        "يرجى إدخال رقم جوال صحيح.";
-    }
-
-    if (
-      !wifeForm.previousFamilyName.trim()
-    ) {
-      newErrors.previousFamilyName =
-        "يرجى إدخال اسم العائلة السابقة.";
-    }
-
-    if (
-      !wifeForm.employmentStatus
-    ) {
-      newErrors.employmentStatus =
-        "يرجى اختيار الحالة الوظيفية.";
-    }
-
-    if (
-      wifeForm.employmentStatus ===
-        "other" &&
+      wifeForm.employmentStatus === "other" &&
       !wifeForm.otherEmploymentStatus.trim()
     ) {
-      newErrors.otherEmploymentStatus =
-        "يرجى كتابة الحالة الوظيفية للزوجة.";
+      newErrors.otherEmploymentStatus = "يرجى كتابة الحالة الوظيفية للزوجة.";
     }
 
     setErrors(newErrors);
 
-    return (
-      Object.keys(newErrors)
-        .length === 0
-    );
+    return Object.keys(newErrors).length === 0;
   };
 
-  const getEmploymentValueForApi =
-    () => {
-      if (
-        wifeForm.employmentStatus ===
-        "other"
-      ) {
-        return wifeForm.otherEmploymentStatus.trim();
-      }
+  const getEmploymentValueForApi = () => {
+    if (wifeForm.employmentStatus === "other") {
+      return wifeForm.otherEmploymentStatus.trim();
+    }
 
-      return wifeForm.employmentStatus;
-    };
+    return wifeForm.employmentStatus;
+  };
 
-  const handleSaveWife = async (
-    event,
-  ) => {
+  const handleSaveWife = async (event) => {
     event.preventDefault();
 
-    if (
-      !validateWifeForm() ||
-      savingWife
-    ) {
+    if (!validateWifeForm() || savingWife) {
       return;
     }
 
@@ -366,52 +276,37 @@ function WivesPage() {
     setSuccessMessage("");
 
     try {
-      const isEditing =
-        Boolean(editingWifeId);
+      const isEditing = Boolean(editingWifeId);
 
       const url = isEditing
         ? `${API_BASE_URL}/api/family/wives/${editingWifeId}`
         : `${API_BASE_URL}/api/family/wives`;
 
-      const response = await fetch(
-        url,
-        {
-          method: isEditing
-            ? "PATCH"
-            : "POST",
+      const response = await fetch(url, {
+        method: isEditing ? "PATCH" : "POST",
 
-          headers: {
-            ...getAuthHeaders(),
+        headers: {
+          ...getAuthHeaders(),
 
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            full_name:
-              wifeForm.fullName.trim(),
-
-            national_id:
-              wifeForm.nationalId,
-
-            date_of_birth:
-              wifeForm.dateOfBirth,
-
-            phone:
-              wifeForm.phone,
-
-            previous_family_name:
-              wifeForm.previousFamilyName.trim(),
-
-            employment_status:
-              getEmploymentValueForApi(),
-          }),
+          "Content-Type": "application/json",
         },
-      );
 
-      const data = await response
-        .json()
-        .catch(() => ({}));
+        body: JSON.stringify({
+          full_name: wifeForm.fullName.trim(),
+
+          national_id: wifeForm.nationalId,
+
+          date_of_birth: wifeForm.dateOfBirth,
+
+          phone: wifeForm.phone,
+
+          previous_family_name: wifeForm.previousFamilyName.trim(),
+
+          employment_status: getEmploymentValueForApi(),
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
         handleUnauthorized();
@@ -421,9 +316,7 @@ function WivesPage() {
       if (!response.ok) {
         throw new Error(
           data.message ||
-            (isEditing
-              ? "تعذر تعديل بيانات الزوجة."
-              : "تعذر إضافة الزوجة."),
+            (isEditing ? "تعذر تعديل بيانات الزوجة." : "تعذر إضافة الزوجة."),
         );
       }
 
@@ -436,53 +329,34 @@ function WivesPage() {
       setIsSaved(true);
 
       setSuccessMessage(
-        isEditing
-          ? "تم تعديل بيانات الزوجة بنجاح."
-          : "تمت إضافة الزوجة بنجاح.",
+        isEditing ? "تم تعديل بيانات الزوجة بنجاح." : "تمت إضافة الزوجة بنجاح.",
       );
 
-      window.dispatchEvent(
-        new Event("family-data-updated"),
-      );
+      window.dispatchEvent(new Event("family-data-updated"));
     } catch (requestError) {
-      setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حفظ بيانات الزوجة.",
-      );
+      setPageError(requestError.message || "حدث خطأ أثناء حفظ بيانات الزوجة.");
     } finally {
       setSavingWife(false);
     }
   };
 
-  const handleEditWife = (
-    wife,
-  ) => {
+  const handleEditWife = (wife) => {
     setEditingWifeId(wife.id);
 
     setWifeForm({
-      fullName:
-        wife.fullName || "",
+      fullName: wife.fullName || "",
 
-      nationalId:
-        wife.nationalId || "",
+      nationalId: wife.nationalId || "",
 
-      dateOfBirth:
-        wife.dateOfBirth || "",
+      dateOfBirth: wife.dateOfBirth || "",
 
-      phone:
-        wife.phone || "",
+      phone: wife.phone || "",
 
-      previousFamilyName:
-        wife.previousFamilyName ||
-        "",
+      previousFamilyName: wife.previousFamilyName || "",
 
-      employmentStatus:
-        wife.employmentStatus ||
-        "",
+      employmentStatus: wife.employmentStatus || "",
 
-      otherEmploymentStatus:
-        wife.otherEmploymentStatus ||
-        "",
+      otherEmploymentStatus: wife.otherEmploymentStatus || "",
     });
 
     setErrors({});
@@ -492,17 +366,12 @@ function WivesPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteWife = async (
-    wifeId,
-  ) => {
+  const handleDeleteWife = async (wifeId) => {
     if (deletingWifeId) {
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        "هل أنت متأكد من حذف بيانات الزوجة؟",
-      );
+    const confirmed = window.confirm("هل أنت متأكد من حذف بيانات الزوجة؟");
 
     if (!confirmed) {
       return;
@@ -514,20 +383,16 @@ function WivesPage() {
     setSuccessMessage("");
 
     try {
-      const response =
-        await fetch(
-          `${API_BASE_URL}/api/family/wives/${wifeId}`,
-          {
-            method: "DELETE",
+      const response = await fetch(
+        `${API_BASE_URL}/api/family/wives/${wifeId}`,
+        {
+          method: "DELETE",
 
-            headers:
-              getAuthHeaders(),
-          },
-        );
+          headers: getAuthHeaders(),
+        },
+      );
 
-      const data = await response
-        .json()
-        .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
         handleUnauthorized();
@@ -535,34 +400,20 @@ function WivesPage() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "تعذر حذف الزوجة.",
-        );
+        throw new Error(data.message || "تعذر حذف الزوجة.");
       }
 
-      setWives(
-        (currentWives) =>
-          currentWives.filter(
-            (wife) =>
-              wife.id !== wifeId,
-          ),
+      setWives((currentWives) =>
+        currentWives.filter((wife) => wife.id !== wifeId),
       );
 
       setIsSaved(true);
 
-      setSuccessMessage(
-        "تم حذف بيانات الزوجة بنجاح.",
-      );
+      setSuccessMessage("تم حذف بيانات الزوجة بنجاح.");
 
-      window.dispatchEvent(
-        new Event("family-data-updated"),
-      );
+      window.dispatchEvent(new Event("family-data-updated"));
     } catch (requestError) {
-      setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حذف الزوجة.",
-      );
+      setPageError(requestError.message || "حدث خطأ أثناء حذف الزوجة.");
     } finally {
       setDeletingWifeId(null);
     }
@@ -571,50 +422,30 @@ function WivesPage() {
   const handleDraftSave = () => {
     setIsSaved(true);
 
-    setSuccessMessage(
-      "تم حفظ بيانات الزوجات.",
-    );
+    setSuccessMessage("تم حفظ بيانات الزوجات.");
   };
 
-  const handleSaveAndContinue =
-    () => {
-      navigate(
-        "/family/housing",
-      );
-    };
+  const handleSaveAndContinue = () => {
+    navigate("/family/housing");
+  };
 
-  const getEmploymentStatusLabel =
-    (wife) => {
-      if (
-        wife.employmentStatus ===
-        "housewife"
-      ) {
-        return "ربة أسرة";
-      }
+  const getEmploymentStatusLabel = (wife) => {
+    if (wife.employmentStatus === "housewife") {
+      return "ربة أسرة";
+    }
 
-      if (
-        wife.employmentStatus ===
-        "employee"
-      ) {
-        return "موظفة";
-      }
+    if (wife.employmentStatus === "employee") {
+      return "موظفة";
+    }
 
-      if (
-        wife.employmentStatus ===
-        "other"
-      ) {
-        return (
-          wife.otherEmploymentStatus ||
-          "أخرى"
-        );
-      }
+    if (wife.employmentStatus === "other") {
+      return wife.otherEmploymentStatus || "أخرى";
+    }
 
-      return "";
-    };
+    return "";
+  };
 
-  const inputClassName = (
-    fieldName,
-  ) =>
+  const inputClassName = (fieldName) =>
     `h-12 w-full rounded-xl border bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition placeholder:text-slate-400 focus:bg-white focus:ring-4 ${
       errors[fieldName]
         ? "border-red-300 focus:border-red-400 focus:ring-red-100"
@@ -629,8 +460,7 @@ function WivesPage() {
             <span className="mx-auto block h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#031632]" />
 
             <p className="mt-4 text-sm font-semibold text-slate-500">
-              جاري تحميل بيانات
-              الزوجات...
+              جاري تحميل بيانات الزوجات...
             </p>
           </div>
         </div>
@@ -648,12 +478,17 @@ function WivesPage() {
             </h1>
 
             <p className="mt-2 text-sm leading-7 text-slate-500">
-              يمكنك إضافة أكثر من
-              زوجة.
+              يمكنك إضافة أكثر من زوجة.
             </p>
           </div>
 
-          <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
+          <span
+            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+              isSaved
+                ? "bg-green-50 text-green-700"
+                : "bg-[#eef3ff] text-[#031632]"
+            }`}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -676,18 +511,12 @@ function WivesPage() {
                     d="M12 6v6l4 2"
                   />
 
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                  />
+                  <circle cx="12" cy="12" r="9" />
                 </>
               )}
             </svg>
 
-            {isSaved
-              ? "تم حفظ التغييرات"
-              : "لم تحفظ التغييرات"}
+            {isSaved ? "تم حفظ التغييرات" : "لم تحفظ التغييرات"}
           </span>
         </div>
 
@@ -710,8 +539,7 @@ function WivesPage() {
             </h2>
 
             <span className="w-fit rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
-              عدد الزوجات المضافات:{" "}
-              {wives.length}
+              عدد الزوجات المضافات: {wives.length}
             </span>
           </div>
 
@@ -741,22 +569,17 @@ function WivesPage() {
               </div>
 
               <h3 className="mt-5 text-base font-bold text-[#031632]">
-                لم تتم إضافة أي
-                زوجة حتى الآن.
+                لم تتم إضافة أي زوجة حتى الآن.
               </h3>
 
               <p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">
-                اضغط على الزر أدناه
-                لإضافة بيانات الزوجة.
-                يمكنك إضافة أكثر من
+                اضغط على الزر أدناه لإضافة بيانات الزوجة. يمكنك إضافة أكثر من
                 زوجة واحدة.
               </p>
 
               <button
                 type="button"
-                onClick={
-                  handleAddWife
-                }
+                onClick={handleAddWife}
                 className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
               >
                 <svg
@@ -773,50 +596,61 @@ function WivesPage() {
                     d="M12 5v14m7-7H5"
                   />
                 </svg>
-
                 إضافة زوجة
               </button>
             </div>
           ) : (
             <div className="py-6">
               <div className="grid gap-4 md:grid-cols-2">
-                {wives.map(
-                  (
-                    wife,
-                    index,
-                  ) => (
-                    <div
-                      key={
-                        wife.id
-                      }
-                      className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
-                    >
-                      <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-                        <div>
-                          <span className="text-xs font-semibold text-[#d8ad55]">
-                            الزوجة{" "}
-                            {index +
-                              1}
-                          </span>
+                {wives.map((wife, index) => (
+                  <div
+                    key={wife.id}
+                    className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                      <div>
+                        <span className="text-xs font-semibold text-[#d8ad55]">
+                          الزوجة {index + 1}
+                        </span>
 
-                          <h3 className="mt-1 text-base font-bold text-[#031632]">
-                            {
-                              wife.fullName
-                            }
-                          </h3>
-                        </div>
+                        <h3 className="mt-1 text-base font-bold text-[#031632]">
+                          {wife.fullName}
+                        </h3>
+                      </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleEditWife(
-                                wife,
-                              )
-                            }
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
-                            aria-label="تعديل الزوجة"
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditWife(wife)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
+                          aria-label="تعديل الزوجة"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            className="h-4 w-4"
                           >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
+                            />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={deletingWifeId === wife.id}
+                          onClick={() => handleDeleteWife(wife.id)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label="حذف الزوجة"
+                        >
+                          {deletingWifeId === wife.id ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                          ) : (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
@@ -828,124 +662,66 @@ function WivesPage() {
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
+                                d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
                               />
                             </svg>
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={
-                              deletingWifeId ===
-                              wife.id
-                            }
-                            onClick={() =>
-                              handleDeleteWife(
-                                wife.id,
-                              )
-                            }
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label="حذف الزوجة"
-                          >
-                            {deletingWifeId ===
-                            wife.id ? (
-                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
-                            ) : (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                className="h-4 w-4"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
-                                />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            رقم
-                            الهوية
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              wife.nationalId
-                            }
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            تاريخ
-                            الميلاد
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              wife.dateOfBirth
-                            }
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            رقم
-                            الجوال
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              wife.phone
-                            }
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            العائلة
-                            السابقة
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              wife.previousFamilyName
-                            }
-                          </p>
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <p className="text-xs text-slate-500">
-                            الحالة
-                            الوظيفية
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {getEmploymentStatusLabel(
-                              wife,
-                            )}
-                          </p>
-                        </div>
+                          )}
+                        </button>
                       </div>
                     </div>
-                  ),
-                )}
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs text-slate-500">رقم الهوية</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.nationalId}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">تاريخ الميلاد</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.dateOfBirth}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">رقم الجوال</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.phone}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">
+                          العائلة السابقة
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.previousFamilyName}
+                        </p>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <p className="text-xs text-slate-500">
+                          الحالة الوظيفية
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {getEmploymentStatusLabel(wife)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <button
                 type="button"
-                onClick={
-                  handleAddWife
-                }
+                onClick={handleAddWife}
                 className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
               >
                 <svg
@@ -962,7 +738,6 @@ function WivesPage() {
                     d="M12 5v14m7-7H5"
                   />
                 </svg>
-
                 إضافة زوجة أخرى
               </button>
             </div>
@@ -974,19 +749,14 @@ function WivesPage() {
             to="/family/basic-info"
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
           >
-            <span aria-hidden="true">
-              →
-            </span>
-
+            <span aria-hidden="true">→</span>
             السابق
           </Link>
 
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <button
               type="button"
-              onClick={
-                handleDraftSave
-              }
+              onClick={handleDraftSave}
               className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
             >
               حفظ كمسودة
@@ -994,16 +764,11 @@ function WivesPage() {
 
             <button
               type="button"
-              onClick={
-                handleSaveAndContinue
-              }
+              onClick={handleSaveAndContinue}
               className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
             >
               حفظ والمتابعة
-
-              <span aria-hidden="true">
-                ←
-              </span>
+              <span aria-hidden="true">←</span>
             </button>
           </div>
         </div>
@@ -1012,40 +777,27 @@ function WivesPage() {
       {isModalOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-[#031632]/60 px-4 py-6 backdrop-blur-sm"
-          onMouseDown={
-            handleCloseModal
-          }
+          onMouseDown={handleCloseModal}
         >
           <div
             className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(
-              event,
-            ) =>
-              event.stopPropagation()
-            }
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
               <div>
                 <h2 className="text-lg font-bold text-[#031632]">
-                  {editingWifeId
-                    ? "تعديل بيانات الزوجة"
-                    : "إضافة زوجة"}
+                  {editingWifeId ? "تعديل بيانات الزوجة" : "إضافة زوجة"}
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  أدخل بيانات الزوجة
-                  بدقة.
+                  أدخل بيانات الزوجة بدقة.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={
-                  handleCloseModal
-                }
-                disabled={
-                  savingWife
-                }
+                onClick={handleCloseModal}
+                disabled={savingWife}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f1f4f8] text-[#031632] transition hover:bg-[#e7ebf1] disabled:opacity-50"
                 aria-label="إغلاق"
               >
@@ -1066,49 +818,30 @@ function WivesPage() {
               </button>
             </div>
 
-            <form
-              onSubmit={
-                handleSaveWife
-              }
-              className="p-5 sm:p-6"
-            >
+            <form onSubmit={handleSaveWife} className="p-5 sm:p-6">
               <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
                 <div>
                   <label
                     htmlFor="wifeFullName"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    اسم الزوجة
-                    الرباعي{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    اسم الزوجة الرباعي <span className="text-red-500">*</span>
                   </label>
 
                   <input
                     id="wifeFullName"
                     name="fullName"
                     type="text"
-                    value={
-                      wifeForm.fullName
-                    }
-                    onChange={
-                      handleWifeFormChange
-                    }
-                    disabled={
-                      savingWife
-                    }
+                    value={wifeForm.fullName}
+                    onChange={handleWifeFormChange}
+                    disabled={savingWife}
                     placeholder="أدخل اسم الزوجة الرباعي"
-                    className={inputClassName(
-                      "fullName",
-                    )}
+                    className={inputClassName("fullName")}
                   />
 
                   {errors.fullName && (
                     <p className="mt-2 text-xs font-medium text-red-500">
-                      {
-                        errors.fullName
-                      }
+                      {errors.fullName}
                     </p>
                   )}
                 </div>
@@ -1118,10 +851,7 @@ function WivesPage() {
                     htmlFor="wifeNationalId"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    رقم الهوية{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    رقم الهوية <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -1130,15 +860,9 @@ function WivesPage() {
                     type="text"
                     inputMode="numeric"
                     maxLength={9}
-                    value={
-                      wifeForm.nationalId
-                    }
-                    onChange={
-                      handleWifeFormChange
-                    }
-                    disabled={
-                      savingWife
-                    }
+                    value={wifeForm.nationalId}
+                    onChange={handleWifeFormChange}
+                    disabled={savingWife}
                     placeholder="أدخل رقم الهوية"
                     className={`${inputClassName(
                       "nationalId",
@@ -1147,9 +871,7 @@ function WivesPage() {
 
                   {errors.nationalId && (
                     <p className="mt-2 text-xs font-medium text-red-500">
-                      {
-                        errors.nationalId
-                      }
+                      {errors.nationalId}
                     </p>
                   )}
                 </div>
@@ -1159,35 +881,22 @@ function WivesPage() {
                     htmlFor="wifeDateOfBirth"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    تاريخ الميلاد{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    تاريخ الميلاد <span className="text-red-500">*</span>
                   </label>
 
                   <input
                     id="wifeDateOfBirth"
                     name="dateOfBirth"
                     type="date"
-                    value={
-                      wifeForm.dateOfBirth
-                    }
-                    onChange={
-                      handleWifeFormChange
-                    }
-                    disabled={
-                      savingWife
-                    }
-                    className={inputClassName(
-                      "dateOfBirth",
-                    )}
+                    value={wifeForm.dateOfBirth}
+                    onChange={handleWifeFormChange}
+                    disabled={savingWife}
+                    className={inputClassName("dateOfBirth")}
                   />
 
                   {errors.dateOfBirth && (
                     <p className="mt-2 text-xs font-medium text-red-500">
-                      {
-                        errors.dateOfBirth
-                      }
+                      {errors.dateOfBirth}
                     </p>
                   )}
                 </div>
@@ -1197,10 +906,7 @@ function WivesPage() {
                     htmlFor="wifePhone"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    رقم الجوال{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    رقم الجوال <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -1209,15 +915,9 @@ function WivesPage() {
                     type="tel"
                     inputMode="numeric"
                     maxLength={10}
-                    value={
-                      wifeForm.phone
-                    }
-                    onChange={
-                      handleWifeFormChange
-                    }
-                    disabled={
-                      savingWife
-                    }
+                    value={wifeForm.phone}
+                    onChange={handleWifeFormChange}
+                    disabled={savingWife}
                     placeholder="05XXXXXXXX"
                     className={`${inputClassName(
                       "phone",
@@ -1236,37 +936,23 @@ function WivesPage() {
                     htmlFor="previousFamilyName"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    عائلة الزوجة
-                    السابقة{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    عائلة الزوجة السابقة <span className="text-red-500">*</span>
                   </label>
 
                   <input
                     id="previousFamilyName"
                     name="previousFamilyName"
                     type="text"
-                    value={
-                      wifeForm.previousFamilyName
-                    }
-                    onChange={
-                      handleWifeFormChange
-                    }
-                    disabled={
-                      savingWife
-                    }
+                    value={wifeForm.previousFamilyName}
+                    onChange={handleWifeFormChange}
+                    disabled={savingWife}
                     placeholder="أدخل اسم العائلة السابقة"
-                    className={inputClassName(
-                      "previousFamilyName",
-                    )}
+                    className={inputClassName("previousFamilyName")}
                   />
 
                   {errors.previousFamilyName && (
                     <p className="mt-2 text-xs font-medium text-red-500">
-                      {
-                        errors.previousFamilyName
-                      }
+                      {errors.previousFamilyName}
                     </p>
                   )}
                 </div>
@@ -1276,93 +962,58 @@ function WivesPage() {
                     htmlFor="employmentStatus"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    الحالة الوظيفية
-                    للزوجة{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    الحالة الوظيفية للزوجة{" "}
+                    <span className="text-red-500">*</span>
                   </label>
 
                   <select
                     id="employmentStatus"
                     name="employmentStatus"
-                    value={
-                      wifeForm.employmentStatus
-                    }
-                    onChange={
-                      handleWifeFormChange
-                    }
-                    disabled={
-                      savingWife
-                    }
-                    className={inputClassName(
-                      "employmentStatus",
-                    )}
+                    value={wifeForm.employmentStatus}
+                    onChange={handleWifeFormChange}
+                    disabled={savingWife}
+                    className={inputClassName("employmentStatus")}
                   >
-                    <option value="">
-                      اختر...
-                    </option>
+                    <option value="">اختر...</option>
 
-                    <option value="housewife">
-                      ربة أسرة
-                    </option>
+                    <option value="housewife">ربة أسرة</option>
 
-                    <option value="employee">
-                      موظفة
-                    </option>
+                    <option value="employee">موظفة</option>
 
-                    <option value="other">
-                      أخرى
-                    </option>
+                    <option value="other">أخرى</option>
                   </select>
 
                   {errors.employmentStatus && (
                     <p className="mt-2 text-xs font-medium text-red-500">
-                      {
-                        errors.employmentStatus
-                      }
+                      {errors.employmentStatus}
                     </p>
                   )}
                 </div>
 
-                {wifeForm.employmentStatus ===
-                  "other" && (
+                {wifeForm.employmentStatus === "other" && (
                   <div className="md:col-span-2">
                     <label
                       htmlFor="otherEmploymentStatus"
                       className="mb-2 block text-sm font-semibold text-[#031632]"
                     >
-                      اكتب الحالة
-                      الوظيفية{" "}
-                      <span className="text-red-500">
-                        *
-                      </span>
+                      اكتب الحالة الوظيفية{" "}
+                      <span className="text-red-500">*</span>
                     </label>
 
                     <input
                       id="otherEmploymentStatus"
                       name="otherEmploymentStatus"
                       type="text"
-                      value={
-                        wifeForm.otherEmploymentStatus
-                      }
-                      onChange={
-                        handleWifeFormChange
-                      }
-                      disabled={
-                        savingWife
-                      }
+                      value={wifeForm.otherEmploymentStatus}
+                      onChange={handleWifeFormChange}
+                      disabled={savingWife}
                       placeholder="اكتب الحالة الوظيفية للزوجة"
-                      className={inputClassName(
-                        "otherEmploymentStatus",
-                      )}
+                      className={inputClassName("otherEmploymentStatus")}
                     />
 
                     {errors.otherEmploymentStatus && (
                       <p className="mt-2 text-xs font-medium text-red-500">
-                        {
-                          errors.otherEmploymentStatus
-                        }
+                        {errors.otherEmploymentStatus}
                       </p>
                     )}
                   </div>
@@ -1372,12 +1023,8 @@ function WivesPage() {
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={
-                    handleCloseModal
-                  }
-                  disabled={
-                    savingWife
-                  }
+                  onClick={handleCloseModal}
+                  disabled={savingWife}
                   className="h-11 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   إلغاء
@@ -1385,9 +1032,7 @@ function WivesPage() {
 
                 <button
                   type="submit"
-                  disabled={
-                    savingWife
-                  }
+                  disabled={savingWife}
                   className="h-11 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {savingWife
