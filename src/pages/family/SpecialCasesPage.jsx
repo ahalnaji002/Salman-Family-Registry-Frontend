@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import SaveStatusBadge from "../../components/SaveStatusBadge";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -40,8 +41,7 @@ function SpecialCasesPage() {
   const [isSaved, setIsSaved] = useState(false);
 
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const getAuthHeaders = () => ({
     Authorization: `Bearer ${token}`,
@@ -95,8 +95,7 @@ function SpecialCasesPage() {
     fullName: child.full_name || "",
     nationalId: String(child.national_id || ""),
     dateOfBirth: normalizeDate(child.date_of_birth),
-    relationship:
-      child.gender === "female" ? "ابنة" : "ابن",
+    relationship: child.gender === "female" ? "ابنة" : "ابن",
     gender: child.gender || "",
   });
 
@@ -127,33 +126,21 @@ function SpecialCasesPage() {
         childrenResponse,
         familyResponse,
       ] = await Promise.all([
-        fetch(
-          `${API_BASE_URL}/api/family/special-cases`,
-          {
-            headers: getAuthHeaders(),
-          },
-        ),
+        fetch(`${API_BASE_URL}/api/family/special-cases`, {
+          headers: getAuthHeaders(),
+        }),
 
-        fetch(
-          `${API_BASE_URL}/api/family/wives`,
-          {
-            headers: getAuthHeaders(),
-          },
-        ),
+        fetch(`${API_BASE_URL}/api/family/wives`, {
+          headers: getAuthHeaders(),
+        }),
 
-        fetch(
-          `${API_BASE_URL}/api/family/children`,
-          {
-            headers: getAuthHeaders(),
-          },
-        ),
+        fetch(`${API_BASE_URL}/api/family/children`, {
+          headers: getAuthHeaders(),
+        }),
 
-        fetch(
-          `${API_BASE_URL}/api/family`,
-          {
-            headers: getAuthHeaders(),
-          },
-        ),
+        fetch(`${API_BASE_URL}/api/family`, {
+          headers: getAuthHeaders(),
+        }),
       ]);
 
       if (
@@ -166,44 +153,30 @@ function SpecialCasesPage() {
         return;
       }
 
-      const [
-        specialCasesData,
-        wivesData,
-        childrenData,
-        familyData,
-      ] = await Promise.all([
-        specialCasesResponse.json().catch(() => ({})),
-        wivesResponse.json().catch(() => ({})),
-        childrenResponse.json().catch(() => ({})),
-        familyResponse.json().catch(() => ({})),
-      ]);
+      const [specialCasesData, wivesData, childrenData, familyData] =
+        await Promise.all([
+          specialCasesResponse.json().catch(() => ({})),
+          wivesResponse.json().catch(() => ({})),
+          childrenResponse.json().catch(() => ({})),
+          familyResponse.json().catch(() => ({})),
+        ]);
 
       if (!specialCasesResponse.ok) {
         throw new Error(
-          specialCasesData.message ||
-            "تعذر تحميل الحالات الخاصة.",
+          specialCasesData.message || "تعذر تحميل الحالات الخاصة.",
         );
       }
 
       if (!wivesResponse.ok) {
-        throw new Error(
-          wivesData.message ||
-            "تعذر تحميل بيانات الزوجات.",
-        );
+        throw new Error(wivesData.message || "تعذر تحميل بيانات الزوجات.");
       }
 
       if (!childrenResponse.ok) {
-        throw new Error(
-          childrenData.message ||
-            "تعذر تحميل بيانات الأبناء.",
-        );
+        throw new Error(childrenData.message || "تعذر تحميل بيانات الأبناء.");
       }
 
       if (!familyResponse.ok) {
-        throw new Error(
-          familyData.message ||
-            "تعذر تحميل بيانات رب الأسرة.",
-        );
+        throw new Error(familyData.message || "تعذر تحميل بيانات رب الأسرة.");
       }
 
       const apiSpecialCases =
@@ -211,37 +184,21 @@ function SpecialCasesPage() {
         specialCasesData.special_cases ||
         [];
 
-      const apiWives =
-        wivesData.data?.wives ||
-        wivesData.wives ||
-        [];
+      const apiWives = wivesData.data?.wives || wivesData.wives || [];
 
       const apiChildren =
-        childrenData.data?.children ||
-        childrenData.children ||
-        [];
+        childrenData.data?.children || childrenData.children || [];
 
-      const apiFamily =
-        familyData.data?.family ||
-        familyData.family ||
-        null;
+      const apiFamily = familyData.data?.family || familyData.family || null;
 
-      setSpecialCases(
-        apiSpecialCases.map(mapSpecialCaseFromApi),
-      );
+      setSpecialCases(apiSpecialCases.map(mapSpecialCaseFromApi));
 
-      setWives(
-        apiWives.map(mapWifeFromApi),
-      );
+      setWives(apiWives.map(mapWifeFromApi));
 
-      setChildren(
-        apiChildren.map(mapChildFromApi),
-      );
+      setChildren(apiChildren.map(mapChildFromApi));
 
       if (apiFamily) {
-        setFamilyHead(
-          mapFamilyHeadFromApi(apiFamily),
-        );
+        setFamilyHead(mapFamilyHeadFromApi(apiFamily));
       } else {
         setFamilyHead(null);
       }
@@ -251,14 +208,9 @@ function SpecialCasesPage() {
       }
     } catch (requestError) {
       if (requestError instanceof TypeError) {
-        setPageError(
-          "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.",
-        );
+        setPageError("تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.");
       } else {
-        setPageError(
-          requestError.message ||
-            "حدث خطأ أثناء تحميل الصفحة.",
-        );
+        setPageError(requestError.message || "حدث خطأ أثناء تحميل الصفحة.");
       }
     } finally {
       setLoading(false);
@@ -275,31 +227,18 @@ function SpecialCasesPage() {
     }
 
     if (
-      ["patient", "injured", "disability"].includes(
-        specialCaseForm.caseType,
-      )
+      ["patient", "injured", "disability"].includes(specialCaseForm.caseType)
     ) {
-      return [
-        ...(familyHead ? [familyHead] : []),
-        ...wives,
-        ...children,
-      ];
+      return [...(familyHead ? [familyHead] : []), ...wives, ...children];
     }
 
     return [];
-  }, [
-    specialCaseForm.caseType,
-    familyHead,
-    wives,
-    children,
-  ]);
+  }, [specialCaseForm.caseType, familyHead, wives, children]);
 
-  const isMartyr =
-    specialCaseForm.caseType === "martyr";
+  const isMartyr = specialCaseForm.caseType === "martyr";
 
   const requiresExistingPerson =
-    specialCaseForm.caseType &&
-    specialCaseForm.caseType !== "martyr";
+    specialCaseForm.caseType && specialCaseForm.caseType !== "martyr";
 
   const getCaseTypeLabel = (caseType) => {
     const labels = {
@@ -317,27 +256,16 @@ function SpecialCasesPage() {
     return `${person.fullName} - ${person.relationship}`;
   };
 
-  const findPersonByNationalId = (
-    nationalId,
-    caseType,
-  ) => {
-    const normalizedNationalId = String(
-      nationalId || "",
-    );
+  const findPersonByNationalId = (nationalId, caseType) => {
+    const normalizedNationalId = String(nationalId || "");
 
     const source =
       caseType === "pregnant"
         ? wives
-        : [
-            ...(familyHead ? [familyHead] : []),
-            ...wives,
-            ...children,
-          ];
+        : [...(familyHead ? [familyHead] : []), ...wives, ...children];
 
     return source.find(
-      (person) =>
-        String(person.nationalId) ===
-        normalizedNationalId,
+      (person) => String(person.nationalId) === normalizedNationalId,
     );
   };
 
@@ -381,14 +309,11 @@ function SpecialCasesPage() {
   };
 
   const handlePersonChange = (event) => {
-    const selectedPersonKey =
-      event.target.value;
+    const selectedPersonKey = event.target.value;
 
-    const selectedPerson =
-      selectablePeople.find(
-        (person) =>
-          person.key === selectedPersonKey,
-      );
+    const selectedPerson = selectablePeople.find(
+      (person) => person.key === selectedPersonKey,
+    );
 
     if (!selectedPerson) {
       setSpecialCaseForm((currentForm) => ({
@@ -426,17 +351,13 @@ function SpecialCasesPage() {
     setIsSaved(false);
   };
 
-  const handleSpecialCaseFormChange = (
-    event,
-  ) => {
+  const handleSpecialCaseFormChange = (event) => {
     const { name, value } = event.target;
 
     let finalValue = value;
 
     if (name === "nationalId") {
-      finalValue = value
-        .replace(/\D/g, "")
-        .slice(0, 9);
+      finalValue = value.replace(/\D/g, "").slice(0, 9);
     }
 
     setSpecialCaseForm((currentForm) => ({
@@ -458,94 +379,61 @@ function SpecialCasesPage() {
     const newErrors = {};
 
     if (!specialCaseForm.caseType) {
-      newErrors.caseType =
-        "يرجى اختيار نوع الحالة.";
+      newErrors.caseType = "يرجى اختيار نوع الحالة.";
     }
 
-    if (
-      requiresExistingPerson &&
-      !specialCaseForm.selectedPersonKey
-    ) {
+    if (requiresExistingPerson && !specialCaseForm.selectedPersonKey) {
       newErrors.selectedPersonKey =
-        specialCaseForm.caseType ===
-        "pregnant"
+        specialCaseForm.caseType === "pregnant"
           ? "يرجى اختيار الزوجة."
           : "يرجى اختيار صاحب الحالة.";
     }
 
     if (isMartyr) {
       if (!specialCaseForm.fullName.trim()) {
-        newErrors.fullName =
-          "يرجى إدخال اسم الشهيد.";
+        newErrors.fullName = "يرجى إدخال اسم الشهيد.";
       }
 
-      if (
-        !/^\d{9}$/.test(
-          specialCaseForm.nationalId,
-        )
-      ) {
-        newErrors.nationalId =
-          "يرجى إدخال رقم هوية مكون من 9 أرقام.";
+      if (!/^\d{9}$/.test(specialCaseForm.nationalId)) {
+        newErrors.nationalId = "يرجى إدخال رقم هوية مكون من 9 أرقام.";
       }
 
       if (!specialCaseForm.dateOfBirth) {
-        newErrors.dateOfBirth =
-          "يرجى اختيار تاريخ الميلاد.";
+        newErrors.dateOfBirth = "يرجى اختيار تاريخ الميلاد.";
       }
 
-      if (
-        !specialCaseForm.relationship.trim()
-      ) {
-        newErrors.relationship =
-          "يرجى إدخال صلة القرابة.";
+      if (!specialCaseForm.relationship.trim()) {
+        newErrors.relationship = "يرجى إدخال صلة القرابة.";
       }
     }
 
-    if (
-      requiresExistingPerson &&
-      specialCaseForm.selectedPersonKey
-    ) {
+    if (requiresExistingPerson && specialCaseForm.selectedPersonKey) {
       if (!specialCaseForm.fullName) {
-        newErrors.selectedPersonKey =
-          "تعذر جلب بيانات الشخص المحدد.";
+        newErrors.selectedPersonKey = "تعذر جلب بيانات الشخص المحدد.";
       }
 
-      if (
-        !/^\d{9}$/.test(
-          specialCaseForm.nationalId,
-        )
-      ) {
-        newErrors.selectedPersonKey =
-          "رقم هوية الشخص المحدد غير مكتمل.";
+      if (!/^\d{9}$/.test(specialCaseForm.nationalId)) {
+        newErrors.selectedPersonKey = "رقم هوية الشخص المحدد غير مكتمل.";
       }
 
       if (!specialCaseForm.dateOfBirth) {
-        newErrors.selectedPersonKey =
-          "تاريخ ميلاد الشخص المحدد غير موجود.";
+        newErrors.selectedPersonKey = "تاريخ ميلاد الشخص المحدد غير موجود.";
       }
     }
 
     if (!specialCaseForm.details.trim()) {
-      newErrors.details =
-        "يرجى إدخال تفاصيل الحالة.";
+      newErrors.details = "يرجى إدخال تفاصيل الحالة.";
     }
 
     setErrors(newErrors);
 
-    return (
-      Object.keys(newErrors).length === 0
-    );
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveSpecialCase = async (
-    event,
-  ) => {
+  const handleSaveSpecialCase = async (event) => {
     event.preventDefault();
 
-    if (
-      !validateSpecialCaseForm() ||
-      savingCase
-    ) {
+    if (!validateSpecialCaseForm() || savingCase) {
       return;
     }
 
@@ -554,48 +442,36 @@ function SpecialCasesPage() {
     setSuccessMessage("");
 
     try {
-      const isEditing =
-        Boolean(editingCaseId);
+      const isEditing = Boolean(editingCaseId);
 
       const url = isEditing
         ? `${API_BASE_URL}/api/family/special-cases/${editingCaseId}`
         : `${API_BASE_URL}/api/family/special-cases`;
 
       const response = await fetch(url, {
-        method: isEditing
-          ? "PATCH"
-          : "POST",
+        method: isEditing ? "PATCH" : "POST",
 
         headers: {
           ...getAuthHeaders(),
-          "Content-Type":
-            "application/json",
+          "Content-Type": "application/json",
         },
 
         body: JSON.stringify({
-          full_name:
-            specialCaseForm.fullName.trim(),
+          full_name: specialCaseForm.fullName.trim(),
 
-          national_id:
-            specialCaseForm.nationalId,
+          national_id: specialCaseForm.nationalId,
 
-          date_of_birth:
-            specialCaseForm.dateOfBirth,
+          date_of_birth: specialCaseForm.dateOfBirth,
 
-          relationship:
-            specialCaseForm.relationship.trim(),
+          relationship: specialCaseForm.relationship.trim(),
 
-          case_type:
-            specialCaseForm.caseType,
+          case_type: specialCaseForm.caseType,
 
-          case_details:
-            specialCaseForm.details.trim(),
+          case_details: specialCaseForm.details.trim(),
         }),
       });
 
-      const data = await response
-        .json()
-        .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
         handleUnauthorized();
@@ -615,9 +491,7 @@ function SpecialCasesPage() {
 
       setIsModalOpen(false);
       setEditingCaseId(null);
-      setSpecialCaseForm(
-        initialSpecialCaseForm,
-      );
+      setSpecialCaseForm(initialSpecialCaseForm);
       setErrors({});
       setIsSaved(true);
 
@@ -627,56 +501,35 @@ function SpecialCasesPage() {
           : "تمت إضافة الحالة الخاصة بنجاح.",
       );
     } catch (requestError) {
-      setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حفظ الحالة الخاصة.",
-      );
+      setPageError(requestError.message || "حدث خطأ أثناء حفظ الحالة الخاصة.");
     } finally {
       setSavingCase(false);
     }
   };
 
-  const handleEditSpecialCase = (
-    specialCase,
-  ) => {
+  const handleEditSpecialCase = (specialCase) => {
     const matchingPerson =
       specialCase.caseType === "martyr"
         ? null
-        : findPersonByNationalId(
-            specialCase.nationalId,
-            specialCase.caseType,
-          );
+        : findPersonByNationalId(specialCase.nationalId, specialCase.caseType);
 
     setEditingCaseId(specialCase.id);
 
     setSpecialCaseForm({
       caseType: specialCase.caseType || "",
 
-      selectedPersonKey:
-        matchingPerson?.key || "",
+      selectedPersonKey: matchingPerson?.key || "",
 
-      fullName:
-        matchingPerson?.fullName ||
-        specialCase.fullName ||
-        "",
+      fullName: matchingPerson?.fullName || specialCase.fullName || "",
 
-      nationalId:
-        matchingPerson?.nationalId ||
-        specialCase.nationalId ||
-        "",
+      nationalId: matchingPerson?.nationalId || specialCase.nationalId || "",
 
-      dateOfBirth:
-        matchingPerson?.dateOfBirth ||
-        specialCase.dateOfBirth ||
-        "",
+      dateOfBirth: matchingPerson?.dateOfBirth || specialCase.dateOfBirth || "",
 
       relationship:
-        matchingPerson?.relationship ||
-        specialCase.relationship ||
-        "",
+        matchingPerson?.relationship || specialCase.relationship || "",
 
-      details:
-        specialCase.details || "",
+      details: specialCase.details || "",
     });
 
     setErrors({});
@@ -685,16 +538,12 @@ function SpecialCasesPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteSpecialCase = async (
-    caseId,
-  ) => {
+  const handleDeleteSpecialCase = async (caseId) => {
     if (deletingCaseId) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "هل أنت متأكد من حذف هذه الحالة الخاصة؟",
-    );
+    const confirmed = window.confirm("هل أنت متأكد من حذف هذه الحالة الخاصة؟");
 
     if (!confirmed) {
       return;
@@ -713,9 +562,7 @@ function SpecialCasesPage() {
         },
       );
 
-      const data = await response
-        .json()
-        .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
         handleUnauthorized();
@@ -723,29 +570,18 @@ function SpecialCasesPage() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "تعذر حذف الحالة الخاصة.",
-        );
+        throw new Error(data.message || "تعذر حذف الحالة الخاصة.");
       }
 
       setSpecialCases((currentCases) =>
-        currentCases.filter(
-          (specialCase) =>
-            specialCase.id !== caseId,
-        ),
+        currentCases.filter((specialCase) => specialCase.id !== caseId),
       );
 
       setIsSaved(true);
 
-      setSuccessMessage(
-        "تم حذف الحالة الخاصة بنجاح.",
-      );
+      setSuccessMessage("تم حذف الحالة الخاصة بنجاح.");
     } catch (requestError) {
-      setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حذف الحالة الخاصة.",
-      );
+      setPageError(requestError.message || "حدث خطأ أثناء حذف الحالة الخاصة.");
     } finally {
       setDeletingCaseId(null);
     }
@@ -754,9 +590,7 @@ function SpecialCasesPage() {
   const handleDraftSave = () => {
     setIsSaved(true);
 
-    setSuccessMessage(
-      "تم حفظ بيانات الحالات الخاصة.",
-    );
+    setSuccessMessage("تم حفظ بيانات الحالات الخاصة.");
   };
 
   const handleSaveAndContinue = () => {
@@ -789,82 +623,39 @@ function SpecialCasesPage() {
   return (
     <section className="px-4 py-8 sm:px-6 md:px-8 md:py-10">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
-              الحالات الخاصة
-            </h1>
-
-            <p className="mt-2 text-sm leading-7 text-slate-500">
-              أضف بيانات الحالات الخاصة الموجودة داخل الأسرة.
-            </p>
-          </div>
-
-          <span
-            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-              isSaved
-                ? "bg-green-50 text-green-700"
-                : "bg-[#eef3ff] text-[#031632]"
-            }`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-4 w-4"
-            >
-              {isSaved ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m5.25 12.75 4.5 4.5 9-10.5"
-                />
-              ) : (
-                <>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6l4 2"
-                  />
-
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                  />
-                </>
-              )}
-            </svg>
-
-            {isSaved
-              ? "تم حفظ التغييرات"
-              : "لم تحفظ التغييرات"}
-          </span>
-        </div>
-
-        {pageError && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
-            {pageError}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
-            {successMessage}
-          </div>
-        )}
-
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 md:p-8">
+          <div className="mb-6 flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
+                الحالات الخاصة
+              </h1>
+
+              <p className="mt-2 text-sm leading-7 text-slate-500">
+                أضف بيانات الحالات الخاصة الموجودة داخل الأسرة.
+              </p>
+            </div>
+
+            <SaveStatusBadge isSaved={isSaved} saving={savingCase} />
+          </div>
+
+          {pageError && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
+              {pageError}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
+              {successMessage}
+            </div>
+          )}
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-base font-bold text-[#031632]">
               الحالات الخاصة المضافة
             </h2>
 
             <span className="w-fit rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
-              عدد الحالات:{" "}
-              {specialCases.length}
+              عدد الحالات: {specialCases.length}
             </span>
           </div>
 
@@ -920,44 +711,63 @@ function SpecialCasesPage() {
                     d="M12 5v14m7-7H5"
                   />
                 </svg>
-
                 إضافة حالة خاصة
               </button>
             </div>
           ) : (
             <div className="py-6">
               <div className="grid gap-4 md:grid-cols-2">
-                {specialCases.map(
-                  (specialCase, index) => (
-                    <div
-                      key={specialCase.id}
-                      className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
-                    >
-                      <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-                        <div>
-                          <span className="text-xs font-semibold text-[#d8ad55]">
-                            الحالة الخاصة{" "}
-                            {index + 1}
-                          </span>
+                {specialCases.map((specialCase, index) => (
+                  <div
+                    key={specialCase.id}
+                    className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                      <div>
+                        <span className="text-xs font-semibold text-[#d8ad55]">
+                          الحالة الخاصة {index + 1}
+                        </span>
 
-                          <h3 className="mt-1 text-base font-bold text-[#031632]">
-                            {
-                              specialCase.fullName
-                            }
-                          </h3>
-                        </div>
+                        <h3 className="mt-1 text-base font-bold text-[#031632]">
+                          {specialCase.fullName}
+                        </h3>
+                      </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleEditSpecialCase(
-                                specialCase,
-                              )
-                            }
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
-                            aria-label="تعديل الحالة الخاصة"
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditSpecialCase(specialCase)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
+                          aria-label="تعديل الحالة الخاصة"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            className="h-4 w-4"
                           >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
+                            />
+                          </svg>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={deletingCaseId === specialCase.id}
+                          onClick={() =>
+                            handleDeleteSpecialCase(specialCase.id)
+                          }
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label="حذف الحالة الخاصة"
+                        >
+                          {deletingCaseId === specialCase.id ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                          ) : (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
@@ -969,112 +779,57 @@ function SpecialCasesPage() {
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
+                                d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
                               />
                             </svg>
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={
-                              deletingCaseId ===
-                              specialCase.id
-                            }
-                            onClick={() =>
-                              handleDeleteSpecialCase(
-                                specialCase.id,
-                              )
-                            }
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label="حذف الحالة الخاصة"
-                          >
-                            {deletingCaseId ===
-                            specialCase.id ? (
-                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
-                            ) : (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                className="h-4 w-4"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
-                                />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            رقم الهوية
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              specialCase.nationalId
-                            }
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            تاريخ الميلاد
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              specialCase.dateOfBirth
-                            }
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            صلة القرابة
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              specialCase.relationship
-                            }
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            نوع الحالة
-                          </p>
-
-                          <span className="mt-2 inline-flex rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-semibold text-[#031632]">
-                            {getCaseTypeLabel(
-                              specialCase.caseType,
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <p className="text-xs text-slate-500">
-                            تفاصيل الحالة
-                          </p>
-
-                          <p className="mt-1 text-sm leading-7 text-[#031632]">
-                            {
-                              specialCase.details
-                            }
-                          </p>
-                        </div>
+                          )}
+                        </button>
                       </div>
                     </div>
-                  ),
-                )}
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs text-slate-500">رقم الهوية</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {specialCase.nationalId}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">تاريخ الميلاد</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {specialCase.dateOfBirth}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">صلة القرابة</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {specialCase.relationship}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">نوع الحالة</p>
+
+                        <span className="mt-2 inline-flex rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-semibold text-[#031632]">
+                          {getCaseTypeLabel(specialCase.caseType)}
+                        </span>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <p className="text-xs text-slate-500">تفاصيل الحالة</p>
+
+                        <p className="mt-1 text-sm leading-7 text-[#031632]">
+                          {specialCase.details}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <button
@@ -1096,45 +851,38 @@ function SpecialCasesPage() {
                     d="M12 5v14m7-7H5"
                   />
                 </svg>
-
                 إضافة حالة خاصة أخرى
               </button>
             </div>
           )}
-        </div>
 
-        <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            to="/family/children"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
-          >
-            <span aria-hidden="true">
-              →
-            </span>
-
-            السابق
-          </Link>
-
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <button
-              type="button"
-              onClick={handleDraftSave}
-              className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+          <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              to="/family/children"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
             >
-              حفظ كمسودة
-            </button>
+              <span aria-hidden="true">→</span>
+              السابق
+            </Link>
 
-            <button
-              type="button"
-              onClick={handleSaveAndContinue}
-              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-            >
-              حفظ والمتابعة
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                onClick={handleDraftSave}
+                className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+              >
+                حفظ كمسودة
+              </button>
 
-              <span aria-hidden="true">
-                ←
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={handleSaveAndContinue}
+                className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
+              >
+                حفظ والمتابعة
+                <span aria-hidden="true">←</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1146,16 +894,12 @@ function SpecialCasesPage() {
         >
           <div
             className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(event) =>
-              event.stopPropagation()
-            }
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
               <div>
                 <h2 className="text-lg font-bold text-[#031632]">
-                  {editingCaseId
-                    ? "تعديل الحالة الخاصة"
-                    : "إضافة حالة خاصة"}
+                  {editingCaseId ? "تعديل الحالة الخاصة" : "إضافة حالة خاصة"}
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
@@ -1187,61 +931,35 @@ function SpecialCasesPage() {
               </button>
             </div>
 
-            <form
-              onSubmit={
-                handleSaveSpecialCase
-              }
-              className="p-5 sm:p-6"
-            >
+            <form onSubmit={handleSaveSpecialCase} className="p-5 sm:p-6">
               <div className="space-y-6">
                 <div>
                   <label
                     htmlFor="caseType"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    نوع الحالة{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    نوع الحالة <span className="text-red-500">*</span>
                   </label>
 
                   <select
                     id="caseType"
                     name="caseType"
-                    value={
-                      specialCaseForm.caseType
-                    }
-                    onChange={
-                      handleCaseTypeChange
-                    }
+                    value={specialCaseForm.caseType}
+                    onChange={handleCaseTypeChange}
                     disabled={savingCase}
-                    className={`${inputClassName(
-                      "caseType",
-                    )} h-12`}
+                    className={`${inputClassName("caseType")} h-12`}
                   >
-                    <option value="">
-                      اختر نوع الحالة...
-                    </option>
+                    <option value="">اختر نوع الحالة...</option>
 
-                    <option value="patient">
-                      مريض
-                    </option>
+                    <option value="patient">مريض</option>
 
-                    <option value="injured">
-                      جريح
-                    </option>
+                    <option value="injured">جريح</option>
 
-                    <option value="disability">
-                      ذوي إعاقة
-                    </option>
+                    <option value="disability">ذوي إعاقة</option>
 
-                    <option value="martyr">
-                      شهيد
-                    </option>
+                    <option value="martyr">شهيد</option>
 
-                    <option value="pregnant">
-                      حامل
-                    </option>
+                    <option value="pregnant">حامل</option>
                   </select>
 
                   {errors.caseType && (
@@ -1257,63 +975,42 @@ function SpecialCasesPage() {
                       htmlFor="selectedPersonKey"
                       className="mb-2 block text-sm font-semibold text-[#031632]"
                     >
-                      {specialCaseForm.caseType ===
-                      "pregnant"
+                      {specialCaseForm.caseType === "pregnant"
                         ? "اختيار الزوجة"
                         : "صاحب الحالة"}{" "}
-                      <span className="text-red-500">
-                        *
-                      </span>
+                      <span className="text-red-500">*</span>
                     </label>
 
                     <select
                       id="selectedPersonKey"
                       name="selectedPersonKey"
-                      value={
-                        specialCaseForm.selectedPersonKey
-                      }
-                      onChange={
-                        handlePersonChange
-                      }
+                      value={specialCaseForm.selectedPersonKey}
+                      onChange={handlePersonChange}
                       disabled={savingCase}
-                      className={`${inputClassName(
-                        "selectedPersonKey",
-                      )} h-12`}
+                      className={`${inputClassName("selectedPersonKey")} h-12`}
                     >
                       <option value="">
-                        {specialCaseForm.caseType ===
-                        "pregnant"
+                        {specialCaseForm.caseType === "pregnant"
                           ? "اختر الزوجة..."
                           : "اختر صاحب الحالة..."}
                       </option>
 
-                      {selectablePeople.map(
-                        (person) => (
-                          <option
-                            key={person.key}
-                            value={person.key}
-                          >
-                            {getPersonOptionLabel(
-                              person,
-                            )}
-                          </option>
-                        ),
-                      )}
+                      {selectablePeople.map((person) => (
+                        <option key={person.key} value={person.key}>
+                          {getPersonOptionLabel(person)}
+                        </option>
+                      ))}
                     </select>
 
                     {errors.selectedPersonKey && (
                       <p className="mt-2 text-xs font-medium text-red-500">
-                        {
-                          errors.selectedPersonKey
-                        }
+                        {errors.selectedPersonKey}
                       </p>
                     )}
 
-                    {selectablePeople.length ===
-                      0 && (
+                    {selectablePeople.length === 0 && (
                       <p className="mt-2 text-xs leading-6 text-amber-700">
-                        {specialCaseForm.caseType ===
-                        "pregnant"
+                        {specialCaseForm.caseType === "pregnant"
                           ? "لا توجد زوجة مسجلة حاليًا. أضف بيانات الزوجة أولًا."
                           : "لا يوجد أشخاص مسجلون للاختيار منهم."}
                       </p>
@@ -1330,26 +1027,18 @@ function SpecialCasesPage() {
 
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                          <p className="text-xs text-slate-500">
-                            الاسم
-                          </p>
+                          <p className="text-xs text-slate-500">الاسم</p>
 
                           <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              specialCaseForm.fullName
-                            }
+                            {specialCaseForm.fullName}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-xs text-slate-500">
-                            رقم الهوية
-                          </p>
+                          <p className="text-xs text-slate-500">رقم الهوية</p>
 
                           <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              specialCaseForm.nationalId
-                            }
+                            {specialCaseForm.nationalId}
                           </p>
                         </div>
 
@@ -1359,21 +1048,15 @@ function SpecialCasesPage() {
                           </p>
 
                           <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              specialCaseForm.dateOfBirth
-                            }
+                            {specialCaseForm.dateOfBirth}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-xs text-slate-500">
-                            صلة القرابة
-                          </p>
+                          <p className="text-xs text-slate-500">صلة القرابة</p>
 
                           <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              specialCaseForm.relationship
-                            }
+                            {specialCaseForm.relationship}
                           </p>
                         </div>
                       </div>
@@ -1393,27 +1076,18 @@ function SpecialCasesPage() {
                         htmlFor="specialCaseFullName"
                         className="mb-2 block text-sm font-semibold text-[#031632]"
                       >
-                        اسم الشهيد{" "}
-                        <span className="text-red-500">
-                          *
-                        </span>
+                        اسم الشهيد <span className="text-red-500">*</span>
                       </label>
 
                       <input
                         id="specialCaseFullName"
                         name="fullName"
                         type="text"
-                        value={
-                          specialCaseForm.fullName
-                        }
-                        onChange={
-                          handleSpecialCaseFormChange
-                        }
+                        value={specialCaseForm.fullName}
+                        onChange={handleSpecialCaseFormChange}
                         disabled={savingCase}
                         placeholder="أدخل اسم الشهيد"
-                        className={`${inputClassName(
-                          "fullName",
-                        )} h-12`}
+                        className={`${inputClassName("fullName")} h-12`}
                       />
 
                       {errors.fullName && (
@@ -1428,10 +1102,7 @@ function SpecialCasesPage() {
                         htmlFor="specialCaseNationalId"
                         className="mb-2 block text-sm font-semibold text-[#031632]"
                       >
-                        رقم الهوية{" "}
-                        <span className="text-red-500">
-                          *
-                        </span>
+                        رقم الهوية <span className="text-red-500">*</span>
                       </label>
 
                       <input
@@ -1440,12 +1111,8 @@ function SpecialCasesPage() {
                         type="text"
                         inputMode="numeric"
                         maxLength={9}
-                        value={
-                          specialCaseForm.nationalId
-                        }
-                        onChange={
-                          handleSpecialCaseFormChange
-                        }
+                        value={specialCaseForm.nationalId}
+                        onChange={handleSpecialCaseFormChange}
                         disabled={savingCase}
                         placeholder="أدخل رقم الهوية"
                         className={`${inputClassName(
@@ -1455,9 +1122,7 @@ function SpecialCasesPage() {
 
                       {errors.nationalId && (
                         <p className="mt-2 text-xs font-medium text-red-500">
-                          {
-                            errors.nationalId
-                          }
+                          {errors.nationalId}
                         </p>
                       )}
                     </div>
@@ -1467,33 +1132,22 @@ function SpecialCasesPage() {
                         htmlFor="specialCaseDateOfBirth"
                         className="mb-2 block text-sm font-semibold text-[#031632]"
                       >
-                        تاريخ الميلاد{" "}
-                        <span className="text-red-500">
-                          *
-                        </span>
+                        تاريخ الميلاد <span className="text-red-500">*</span>
                       </label>
 
                       <input
                         id="specialCaseDateOfBirth"
                         name="dateOfBirth"
                         type="date"
-                        value={
-                          specialCaseForm.dateOfBirth
-                        }
-                        onChange={
-                          handleSpecialCaseFormChange
-                        }
+                        value={specialCaseForm.dateOfBirth}
+                        onChange={handleSpecialCaseFormChange}
                         disabled={savingCase}
-                        className={`${inputClassName(
-                          "dateOfBirth",
-                        )} h-12`}
+                        className={`${inputClassName("dateOfBirth")} h-12`}
                       />
 
                       {errors.dateOfBirth && (
                         <p className="mt-2 text-xs font-medium text-red-500">
-                          {
-                            errors.dateOfBirth
-                          }
+                          {errors.dateOfBirth}
                         </p>
                       )}
                     </div>
@@ -1503,34 +1157,23 @@ function SpecialCasesPage() {
                         htmlFor="specialCaseRelationship"
                         className="mb-2 block text-sm font-semibold text-[#031632]"
                       >
-                        صلة القرابة{" "}
-                        <span className="text-red-500">
-                          *
-                        </span>
+                        صلة القرابة <span className="text-red-500">*</span>
                       </label>
 
                       <input
                         id="specialCaseRelationship"
                         name="relationship"
                         type="text"
-                        value={
-                          specialCaseForm.relationship
-                        }
-                        onChange={
-                          handleSpecialCaseFormChange
-                        }
+                        value={specialCaseForm.relationship}
+                        onChange={handleSpecialCaseFormChange}
                         disabled={savingCase}
                         placeholder="مثال: ابن، ابنة، أخ..."
-                        className={`${inputClassName(
-                          "relationship",
-                        )} h-12`}
+                        className={`${inputClassName("relationship")} h-12`}
                       />
 
                       {errors.relationship && (
                         <p className="mt-2 text-xs font-medium text-red-500">
-                          {
-                            errors.relationship
-                          }
+                          {errors.relationship}
                         </p>
                       )}
                     </div>
@@ -1543,21 +1186,14 @@ function SpecialCasesPage() {
                       htmlFor="caseDetails"
                       className="mb-2 block text-sm font-semibold text-[#031632]"
                     >
-                      تفاصيل الحالة{" "}
-                      <span className="text-red-500">
-                        *
-                      </span>
+                      تفاصيل الحالة <span className="text-red-500">*</span>
                     </label>
 
                     <textarea
                       id="caseDetails"
                       name="details"
-                      value={
-                        specialCaseForm.details
-                      }
-                      onChange={
-                        handleSpecialCaseFormChange
-                      }
+                      value={specialCaseForm.details}
+                      onChange={handleSpecialCaseFormChange}
                       disabled={savingCase}
                       rows={5}
                       placeholder="اكتب تفاصيل الحالة بشكل واضح."
@@ -1587,10 +1223,7 @@ function SpecialCasesPage() {
 
                 <button
                   type="submit"
-                  disabled={
-                    savingCase ||
-                    !specialCaseForm.caseType
-                  }
+                  disabled={savingCase || !specialCaseForm.caseType}
                   className="h-11 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {savingCase

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import SaveStatusBadge from "../../components/SaveStatusBadge";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -20,6 +21,8 @@ function WivesPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWifeId, setEditingWifeId] = useState(null);
+
+  const [wifeToDelete, setWifeToDelete] = useState(null);
 
   const [wifeForm, setWifeForm] = useState(initialWifeForm);
 
@@ -371,14 +374,7 @@ function WivesPage() {
       return;
     }
 
-    const confirmed = window.confirm("هل أنت متأكد من حذف بيانات الزوجة؟");
-
-    if (!confirmed) {
-      return;
-    }
-
     setDeletingWifeId(wifeId);
-
     setPageError("");
     setSuccessMessage("");
 
@@ -410,7 +406,7 @@ function WivesPage() {
       setIsSaved(true);
 
       setSuccessMessage("تم حذف بيانات الزوجة بنجاح.");
-
+      setWifeToDelete(null);
       window.dispatchEvent(new Event("family-data-updated"));
     } catch (requestError) {
       setPageError(requestError.message || "حدث خطأ أثناء حذف الزوجة.");
@@ -471,68 +467,32 @@ function WivesPage() {
   return (
     <section className="px-4 py-8 sm:px-6 md:px-8 md:py-10">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
-              بيانات الزوجات
-            </h1>
-
-            <p className="mt-2 text-sm leading-7 text-slate-500">
-              يمكنك إضافة أكثر من زوجة.
-            </p>
-          </div>
-
-          <span
-            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-              isSaved
-                ? "bg-green-50 text-green-700"
-                : "bg-[#eef3ff] text-[#031632]"
-            }`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-4 w-4"
-            >
-              {isSaved ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m5.25 12.75 4.5 4.5 9-10.5"
-                />
-              ) : (
-                <>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6l4 2"
-                  />
-
-                  <circle cx="12" cy="12" r="9" />
-                </>
-              )}
-            </svg>
-
-            {isSaved ? "تم حفظ التغييرات" : "لم تحفظ التغييرات"}
-          </span>
-        </div>
-
-        {pageError && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
-            {pageError}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
-            {successMessage}
-          </div>
-        )}
-
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 md:p-8">
+          <div className="mb-6 flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
+                بيانات الزوجات
+              </h1>
+
+              <p className="mt-2 text-sm leading-7 text-slate-500">
+                يمكنك إضافة أكثر من زوجة.
+              </p>
+            </div>
+
+            <SaveStatusBadge isSaved={isSaved} saving={savingWife} />
+          </div>
+
+          {pageError && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
+              {pageError}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
+              {successMessage}
+            </div>
+          )}
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-base font-bold text-[#031632]">
               الزوجات المضافة
@@ -644,7 +604,7 @@ function WivesPage() {
                         <button
                           type="button"
                           disabled={deletingWifeId === wife.id}
-                          onClick={() => handleDeleteWife(wife.id)}
+                          onClick={() => setWifeToDelete(wife.id)}
                           className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label="حذف الزوجة"
                         >
@@ -742,34 +702,34 @@ function WivesPage() {
               </button>
             </div>
           )}
-        </div>
 
-        <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            to="/family/basic-info"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
-          >
-            <span aria-hidden="true">→</span>
-            السابق
-          </Link>
-
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <button
-              type="button"
-              onClick={handleDraftSave}
-              className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+          <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              to="/family/basic-info"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
             >
-              حفظ كمسودة
-            </button>
+              <span aria-hidden="true">→</span>
+              السابق
+            </Link>
 
-            <button
-              type="button"
-              onClick={handleSaveAndContinue}
-              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-            >
-              حفظ والمتابعة
-              <span aria-hidden="true">←</span>
-            </button>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                onClick={handleDraftSave}
+                className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+              >
+                حفظ كمسودة
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveAndContinue}
+                className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
+              >
+                حفظ والمتابعة
+                <span aria-hidden="true">←</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1043,6 +1003,67 @@ function WivesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {wifeToDelete && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-[#031632]/60 px-4 backdrop-blur-sm"
+          onMouseDown={() => {
+            if (!deletingWifeId) {
+              setWifeToDelete(null);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-6 w-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
+                />
+              </svg>
+            </div>
+
+            <h2 className="mt-4 text-lg font-bold text-[#031632]">
+              تأكيد حذف الزوجة
+            </h2>
+
+            <p className="mt-2 text-sm leading-7 text-slate-500">
+              هل أنت متأكد من حذف بيانات الزوجة؟ لا يمكن التراجع عن هذا الإجراء.
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                disabled={Boolean(deletingWifeId)}
+                onClick={() => setWifeToDelete(null)}
+                className="h-11 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-[#031632] transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+
+              <button
+                type="button"
+                disabled={Boolean(deletingWifeId)}
+                onClick={() => handleDeleteWife(wifeToDelete)}
+                className="h-11 flex-1 rounded-xl bg-red-500 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingWifeId ? "جاري الحذف..." : "حذف"}
+              </button>
+            </div>
           </div>
         </div>
       )}

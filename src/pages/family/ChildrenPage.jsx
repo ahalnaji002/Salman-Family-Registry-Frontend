@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import SaveStatusBadge from "../../components/SaveStatusBadge";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -31,8 +32,7 @@ function ChildrenPage() {
   const [isSaved, setIsSaved] = useState(false);
 
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const getAuthHeaders = () => ({
     Authorization: `Bearer ${token}`,
@@ -78,12 +78,9 @@ function ChildrenPage() {
     setPageError("");
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/family/children`,
-        {
-          headers: getAuthHeaders(),
-        },
-      );
+      const response = await fetch(`${API_BASE_URL}/api/family/children`, {
+        headers: getAuthHeaders(),
+      });
 
       const data = await response.json().catch(() => ({}));
 
@@ -93,32 +90,22 @@ function ChildrenPage() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "تعذر تحميل بيانات الأبناء.",
-        );
+        throw new Error(data.message || "تعذر تحميل بيانات الأبناء.");
       }
 
-      const apiChildren =
-        data.data?.children ||
-        data.children ||
-        [];
+      const apiChildren = data.data?.children || data.children || [];
 
-      setChildren(
-        apiChildren.map(mapChildFromApi),
-      );
+      setChildren(apiChildren.map(mapChildFromApi));
 
       if (apiChildren.length > 0) {
         setIsSaved(true);
       }
     } catch (requestError) {
       if (requestError instanceof TypeError) {
-        setPageError(
-          "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.",
-        );
+        setPageError("تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.");
       } else {
         setPageError(
-          requestError.message ||
-            "حدث خطأ أثناء تحميل بيانات الأبناء.",
+          requestError.message || "حدث خطأ أثناء تحميل بيانات الأبناء.",
         );
       }
     } finally {
@@ -156,9 +143,7 @@ function ChildrenPage() {
     let finalValue = value;
 
     if (name === "nationalId") {
-      finalValue = value
-        .replace(/\D/g, "")
-        .slice(0, 9);
+      finalValue = value.replace(/\D/g, "").slice(0, 9);
     }
 
     setChildForm((currentForm) => ({
@@ -192,46 +177,36 @@ function ChildrenPage() {
   const validateChildForm = () => {
     const newErrors = {};
 
- const childName = childForm.fullName.trim();
+    const childName = childForm.fullName.trim();
 
-if (!childName) {
-  newErrors.fullName =
-    "يرجى إدخال اسم الابن أو الابنة.";
-} else {
-  const nameParts = childName
-    .split(/\s+/)
-    .filter(Boolean);
+    if (!childName) {
+      newErrors.fullName = "يرجى إدخال اسم الابن أو الابنة.";
+    } else {
+      const nameParts = childName.split(/\s+/).filter(Boolean);
 
-  if (nameParts.length > 2) {
-    newErrors.fullName =
-      "ادخل فقط اسم الابن /الابنة";
-  }
-}
+      if (nameParts.length > 2) {
+        newErrors.fullName = "ادخل فقط اسم الابن /الابنة";
+      }
+    }
 
     if (!/^\d{9}$/.test(childForm.nationalId)) {
-      newErrors.nationalId =
-        "يرجى إدخال رقم هوية مكون من 9 أرقام.";
+      newErrors.nationalId = "يرجى إدخال رقم هوية مكون من 9 أرقام.";
     }
 
     if (!childForm.dateOfBirth) {
-      newErrors.dateOfBirth =
-        "يرجى اختيار تاريخ الميلاد.";
+      newErrors.dateOfBirth = "يرجى اختيار تاريخ الميلاد.";
     }
 
     if (!childForm.gender) {
-      newErrors.gender =
-        "يرجى اختيار الجنس.";
+      newErrors.gender = "يرجى اختيار الجنس.";
     }
 
     if (!childForm.educationStatus) {
-      newErrors.educationStatus =
-        "يرجى اختيار الحالة التعليمية.";
+      newErrors.educationStatus = "يرجى اختيار الحالة التعليمية.";
     }
 
     if (
-      ["school", "university"].includes(
-        childForm.educationStatus,
-      ) &&
+      ["school", "university"].includes(childForm.educationStatus) &&
       !childForm.institutionName.trim()
     ) {
       newErrors.institutionName =
@@ -264,9 +239,7 @@ if (!childName) {
         : `${API_BASE_URL}/api/family/children`;
 
       const response = await fetch(url, {
-        method: isEditing
-          ? "PATCH"
-          : "POST",
+        method: isEditing ? "PATCH" : "POST",
 
         headers: {
           ...getAuthHeaders(),
@@ -278,15 +251,13 @@ if (!childName) {
           national_id: childForm.nationalId,
           date_of_birth: childForm.dateOfBirth,
           gender: childForm.gender,
-          education_status:
-            childForm.educationStatus,
+          education_status: childForm.educationStatus,
 
-          institution_name:
-            ["school", "university"].includes(
-              childForm.educationStatus,
-            )
-              ? childForm.institutionName.trim()
-              : null,
+          institution_name: ["school", "university"].includes(
+            childForm.educationStatus,
+          )
+            ? childForm.institutionName.trim()
+            : null,
         }),
       });
 
@@ -322,8 +293,7 @@ if (!childName) {
       );
     } catch (requestError) {
       setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حفظ بيانات الابن أو الابنة.",
+        requestError.message || "حدث خطأ أثناء حفظ بيانات الابن أو الابنة.",
       );
     } finally {
       setSavingChild(false);
@@ -338,10 +308,8 @@ if (!childName) {
       nationalId: child.nationalId || "",
       dateOfBirth: child.dateOfBirth || "",
       gender: child.gender || "",
-      educationStatus:
-        child.educationStatus || "",
-      institutionName:
-        child.institutionName || "",
+      educationStatus: child.educationStatus || "",
+      institutionName: child.institutionName || "",
     });
 
     setErrors({});
@@ -385,27 +353,19 @@ if (!childName) {
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "تعذر حذف بيانات الابن أو الابنة.",
-        );
+        throw new Error(data.message || "تعذر حذف بيانات الابن أو الابنة.");
       }
 
       setChildren((currentChildren) =>
-        currentChildren.filter(
-          (child) => child.id !== childId,
-        ),
+        currentChildren.filter((child) => child.id !== childId),
       );
 
       setIsSaved(true);
 
-      setSuccessMessage(
-        "تم حذف بيانات الابن أو الابنة بنجاح.",
-      );
+      setSuccessMessage("تم حذف بيانات الابن أو الابنة بنجاح.");
     } catch (requestError) {
       setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حذف بيانات الابن أو الابنة.",
+        requestError.message || "حدث خطأ أثناء حذف بيانات الابن أو الابنة.",
       );
     } finally {
       setDeletingChildId(null);
@@ -415,9 +375,7 @@ if (!childName) {
   const handleDraftSave = () => {
     setIsSaved(true);
 
-    setSuccessMessage(
-      "تم حفظ بيانات الأبناء.",
-    );
+    setSuccessMessage("تم حفظ بيانات الأبناء.");
   };
 
   const handleSaveAndContinue = () => {
@@ -436,9 +394,7 @@ if (!childName) {
     return "";
   };
 
-  const getEducationStatusLabel = (
-    educationStatus,
-  ) => {
+  const getEducationStatusLabel = (educationStatus) => {
     const labels = {
       under_6: "طفل أقل من 6 سنوات",
       school: "مدرسة",
@@ -475,74 +431,34 @@ if (!childName) {
   return (
     <section className="px-4 py-8 sm:px-6 md:px-8 md:py-10">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
-              بيانات الأبناء
-            </h1>
-
-            <p className="mt-2 text-sm leading-7 text-slate-500">
-              أضف بيانات الأبناء والبنات غير المتزوجات.
-            </p>
-          </div>
-
-          <span
-            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-              isSaved
-                ? "bg-green-50 text-green-700"
-                : "bg-[#eef3ff] text-[#031632]"
-            }`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-4 w-4"
-            >
-              {isSaved ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m5.25 12.75 4.5 4.5 9-10.5"
-                />
-              ) : (
-                <>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6l4 2"
-                  />
-
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                  />
-                </>
-              )}
-            </svg>
-
-            {isSaved
-              ? "تم حفظ التغييرات"
-              : "لم تحفظ التغييرات"}
-          </span>
-        </div>
-
-        {pageError && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
-            {pageError}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
-            {successMessage}
-          </div>
-        )}
-
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 md:p-8">
+          {/* Header */}
+          <div className="mb-6 flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
+                بيانات الأبناء
+              </h1>
+
+              <p className="mt-2 text-sm leading-7 text-slate-500">
+                أضف بيانات الأبناء والبنات غير المتزوجات.
+              </p>
+            </div>
+
+            <SaveStatusBadge isSaved={isSaved} saving={savingChild} />
+          </div>
+
+          {pageError && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
+              {pageError}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
+              {successMessage}
+            </div>
+          )}
+
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-base font-bold text-[#031632]">
               الأبناء المضافون
@@ -583,8 +499,8 @@ if (!childName) {
               </h3>
 
               <p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">
-                اضغط على الزر أدناه لإضافة بيانات ابن أو ابنة غير متزوجة.
-                يمكنك إضافة عدد غير محدود من الأبناء.
+                اضغط على الزر أدناه لإضافة بيانات ابن أو ابنة غير متزوجة. يمكنك
+                إضافة عدد غير محدود من الأبناء.
               </p>
 
               <button
@@ -607,9 +523,7 @@ if (!childName) {
                   />
                 </svg>
 
-                <span>
-                  إضافة ابن أو ابنة
-                </span>
+                <span>إضافة ابن أو ابنة</span>
               </button>
             </div>
           ) : (
@@ -634,9 +548,7 @@ if (!childName) {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() =>
-                            handleEditChild(child)
-                          }
+                          onClick={() => handleEditChild(child)}
                           className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
                           aria-label="تعديل بيانات الابن أو الابنة"
                         >
@@ -658,20 +570,12 @@ if (!childName) {
 
                         <button
                           type="button"
-                          disabled={
-                            deletingChildId ===
-                            child.id
-                          }
-                          onClick={() =>
-                            handleDeleteChild(
-                              child.id,
-                            )
-                          }
+                          disabled={deletingChildId === child.id}
+                          onClick={() => handleDeleteChild(child.id)}
                           className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label="حذف الابن أو الابنة"
                         >
-                          {deletingChildId ===
-                          child.id ? (
+                          {deletingChildId === child.id ? (
                             <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
                           ) : (
                             <svg
@@ -695,9 +599,7 @@ if (!childName) {
 
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <div>
-                        <p className="text-xs text-slate-500">
-                          رقم الهوية
-                        </p>
+                        <p className="text-xs text-slate-500">رقم الهوية</p>
 
                         <p className="mt-1 text-sm font-semibold text-[#031632]">
                           {child.nationalId}
@@ -705,9 +607,7 @@ if (!childName) {
                       </div>
 
                       <div>
-                        <p className="text-xs text-slate-500">
-                          تاريخ الميلاد
-                        </p>
+                        <p className="text-xs text-slate-500">تاريخ الميلاد</p>
 
                         <p className="mt-1 text-sm font-semibold text-[#031632]">
                           {child.dateOfBirth}
@@ -715,14 +615,10 @@ if (!childName) {
                       </div>
 
                       <div>
-                        <p className="text-xs text-slate-500">
-                          الجنس
-                        </p>
+                        <p className="text-xs text-slate-500">الجنس</p>
 
                         <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {getGenderLabel(
-                            child.gender,
-                          )}
+                          {getGenderLabel(child.gender)}
                         </p>
                       </div>
 
@@ -732,25 +628,20 @@ if (!childName) {
                         </p>
 
                         <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {getEducationStatusLabel(
-                            child.educationStatus,
-                          )}
+                          {getEducationStatusLabel(child.educationStatus)}
                         </p>
                       </div>
 
                       {child.institutionName && (
                         <div className="sm:col-span-2">
                           <p className="text-xs text-slate-500">
-                            {child.educationStatus ===
-                            "school"
+                            {child.educationStatus === "school"
                               ? "اسم المدرسة"
                               : "اسم الجامعة"}
                           </p>
 
                           <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {
-                              child.institutionName
-                            }
+                            {child.institutionName}
                           </p>
                         </div>
                       )}
@@ -778,45 +669,38 @@ if (!childName) {
                     d="M12 5v14m7-7H5"
                   />
                 </svg>
-
                 إضافة ابن أو ابنة أخرى
               </button>
             </div>
           )}
-        </div>
 
-        <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            to="/family/housing"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
-          >
-            <span aria-hidden="true">
-              →
-            </span>
-
-            السابق
-          </Link>
-
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <button
-              type="button"
-              onClick={handleDraftSave}
-              className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+          <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              to="/family/housing"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
             >
-              حفظ كمسودة
-            </button>
+              <span aria-hidden="true">→</span>
+              السابق
+            </Link>
 
-            <button
-              type="button"
-              onClick={handleSaveAndContinue}
-              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-            >
-              حفظ والمتابعة
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                onClick={handleDraftSave}
+                className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+              >
+                حفظ كمسودة
+              </button>
 
-              <span aria-hidden="true">
-                ←
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={handleSaveAndContinue}
+                className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
+              >
+                حفظ والمتابعة
+                <span aria-hidden="true">←</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -828,9 +712,7 @@ if (!childName) {
         >
           <div
             className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(event) =>
-              event.stopPropagation()
-            }
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
               <div>
@@ -869,37 +751,25 @@ if (!childName) {
               </button>
             </div>
 
-            <form
-              onSubmit={handleSaveChild}
-              className="p-5 sm:p-6"
-            >
+            <form onSubmit={handleSaveChild} className="p-5 sm:p-6">
               <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
                 <div>
                   <label
                     htmlFor="childFullName"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    الاسم{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    الاسم <span className="text-red-500">*</span>
                   </label>
 
                   <input
                     id="childFullName"
                     name="fullName"
                     type="text"
-                    value={
-                      childForm.fullName
-                    }
-                    onChange={
-                      handleChildFormChange
-                    }
+                    value={childForm.fullName}
+                    onChange={handleChildFormChange}
                     disabled={savingChild}
                     placeholder="أدخل الاسم "
-                    className={inputClassName(
-                      "fullName",
-                    )}
+                    className={inputClassName("fullName")}
                   />
 
                   {errors.fullName && (
@@ -914,10 +784,7 @@ if (!childName) {
                     htmlFor="childNationalId"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    رقم الهوية{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    رقم الهوية <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -926,12 +793,8 @@ if (!childName) {
                     type="text"
                     inputMode="numeric"
                     maxLength={9}
-                    value={
-                      childForm.nationalId
-                    }
-                    onChange={
-                      handleChildFormChange
-                    }
+                    value={childForm.nationalId}
+                    onChange={handleChildFormChange}
                     disabled={savingChild}
                     placeholder="أدخل رقم الهوية"
                     className={`${inputClassName(
@@ -951,26 +814,17 @@ if (!childName) {
                     htmlFor="childDateOfBirth"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    تاريخ الميلاد{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    تاريخ الميلاد <span className="text-red-500">*</span>
                   </label>
 
                   <input
                     id="childDateOfBirth"
                     name="dateOfBirth"
                     type="date"
-                    value={
-                      childForm.dateOfBirth
-                    }
-                    onChange={
-                      handleChildFormChange
-                    }
+                    value={childForm.dateOfBirth}
+                    onChange={handleChildFormChange}
                     disabled={savingChild}
-                    className={inputClassName(
-                      "dateOfBirth",
-                    )}
+                    className={inputClassName("dateOfBirth")}
                   />
 
                   {errors.dateOfBirth && (
@@ -985,37 +839,20 @@ if (!childName) {
                     htmlFor="childGender"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    الجنس{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    الجنس <span className="text-red-500">*</span>
                   </label>
 
                   <select
                     id="childGender"
                     name="gender"
-                    value={
-                      childForm.gender
-                    }
-                    onChange={
-                      handleChildFormChange
-                    }
+                    value={childForm.gender}
+                    onChange={handleChildFormChange}
                     disabled={savingChild}
-                    className={inputClassName(
-                      "gender",
-                    )}
+                    className={inputClassName("gender")}
                   >
-                    <option value="">
-                      اختر...
-                    </option>
-
-                    <option value="male">
-                      ذكر
-                    </option>
-
-                    <option value="female">
-                      أنثى
-                    </option>
+                    <option value="">اختر...</option>
+                    <option value="male">ذكر</option>
+                    <option value="female">أنثى</option>
                   </select>
 
                   {errors.gender && (
@@ -1030,52 +867,27 @@ if (!childName) {
                     htmlFor="educationStatus"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    الحالة التعليمية{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    الحالة التعليمية <span className="text-red-500">*</span>
                   </label>
 
                   <select
                     id="educationStatus"
                     name="educationStatus"
-                    value={
-                      childForm.educationStatus
-                    }
-                    onChange={
-                      handleChildFormChange
-                    }
+                    value={childForm.educationStatus}
+                    onChange={handleChildFormChange}
                     disabled={savingChild}
-                    className={inputClassName(
-                      "educationStatus",
-                    )}
+                    className={inputClassName("educationStatus")}
                   >
-                    <option value="">
-                      اختر...
-                    </option>
-
-                    <option value="under_6">
-                      طفل أقل من 6 سنوات
-                    </option>
-
-                    <option value="school">
-                      مدرسة
-                    </option>
-
-                    <option value="university">
-                      جامعة
-                    </option>
-
-                    <option value="not_studying">
-                      لا يدرس
-                    </option>
+                    <option value="">اختر...</option>
+                    <option value="under_6">طفل أقل من 6 سنوات</option>
+                    <option value="school">مدرسة</option>
+                    <option value="university">جامعة</option>
+                    <option value="not_studying">لا يدرس</option>
                   </select>
 
                   {errors.educationStatus && (
                     <p className="mt-2 text-xs font-medium text-red-500">
-                      {
-                        errors.educationStatus
-                      }
+                      {errors.educationStatus}
                     </p>
                   )}
                 </div>
@@ -1088,42 +900,30 @@ if (!childName) {
                       htmlFor="institutionName"
                       className="mb-2 block text-sm font-semibold text-[#031632]"
                     >
-                      {childForm.educationStatus ===
-                      "school"
+                      {childForm.educationStatus === "school"
                         ? "اسم المدرسة"
                         : "اسم الجامعة"}{" "}
-                      <span className="text-red-500">
-                        *
-                      </span>
+                      <span className="text-red-500">*</span>
                     </label>
 
                     <input
                       id="institutionName"
                       name="institutionName"
                       type="text"
-                      value={
-                        childForm.institutionName
-                      }
-                      onChange={
-                        handleChildFormChange
-                      }
+                      value={childForm.institutionName}
+                      onChange={handleChildFormChange}
                       disabled={savingChild}
                       placeholder={
-                        childForm.educationStatus ===
-                        "school"
+                        childForm.educationStatus === "school"
                           ? "أدخل اسم المدرسة"
                           : "أدخل اسم الجامعة"
                       }
-                      className={inputClassName(
-                        "institutionName",
-                      )}
+                      className={inputClassName("institutionName")}
                     />
 
                     {errors.institutionName && (
                       <p className="mt-2 text-xs font-medium text-red-500">
-                        {
-                          errors.institutionName
-                        }
+                        {errors.institutionName}
                       </p>
                     )}
                   </div>
