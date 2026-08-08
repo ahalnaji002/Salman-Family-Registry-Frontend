@@ -27,6 +27,7 @@ function BasicInfoPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -98,6 +99,8 @@ function BasicInfoPage() {
         setExistingPhotoPath(
           family.personal_photo_path || "",
         );
+
+        setIsSaved(true);
       } catch (requestError) {
         if (requestError instanceof TypeError) {
           setError(
@@ -160,6 +163,7 @@ function BasicInfoPage() {
 
     setError("");
     setSuccessMessage("");
+    setIsSaved(false);
   };
 
   const handlePhotoChange = (event) => {
@@ -204,9 +208,14 @@ function BasicInfoPage() {
 
     setError("");
     setSuccessMessage("");
+    setIsSaved(false);
   };
 
   const validateForm = () => {
+    if (!existingPhotoPath && !familyPhoto?.file) {
+      return "صورة رب الأسرة مطلوبة.";
+    }
+
     if (!formData.fullName.trim()) {
       return "الاسم الرباعي مطلوب.";
     }
@@ -399,6 +408,7 @@ function BasicInfoPage() {
   const saveAllData = async () => {
     await saveFamilyData();
     await uploadPhoto();
+    setIsSaved(true);
   };
 
   const handleDraftSave = async (event) => {
@@ -495,7 +505,7 @@ function BasicInfoPage() {
 
             <span
               className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                successMessage
+                isSaved
                   ? "bg-green-50 text-green-700"
                   : "bg-[#eef3ff] text-[#031632]"
               }`}
@@ -518,7 +528,7 @@ function BasicInfoPage() {
 
               {saving
                 ? "جاري الحفظ..."
-                : successMessage
+                : isSaved
                   ? "تم حفظ التغييرات"
                   : "لم تحفظ التغييرات"}
             </span>

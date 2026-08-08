@@ -107,10 +107,9 @@ function FamilyLayout() {
           .json()
           .catch(() => ({}));
 
-        const completionResult =
-          await completionResponse
-            .json()
-            .catch(() => ({}));
+        const completionResult = await completionResponse
+          .json()
+          .catch(() => ({}));
 
         if (familyResponse.ok) {
           setFamilyData(familyResult.data || null);
@@ -178,8 +177,12 @@ function FamilyLayout() {
   const marriedDaughtersCompleted =
     (familyData?.married_daughters?.length || 0) > 0;
 
-  const reviewCompleted =
-    Number(completionData?.percentage || 0) === 100;
+  // المراجعة لا تعتبر مكتملة لمجرد وصول النسبة إلى 100%
+  // تعتبر مكتملة فقط بعد إرسال النموذج أو اعتماده
+  const reviewCompleted = [
+    "submitted",
+    "approved",
+  ].includes(family?.form_status);
 
   const stepCompletion = {
     "basic-info": basicInfoCompleted,
@@ -212,7 +215,7 @@ function FamilyLayout() {
   return (
     <div
       dir="rtl"
-      className="flex min-h-screen flex-col bg-[#fffdfa]"
+      className="flex min-h-screen flex-col bg-[#fffdf9]"
     >
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
@@ -222,7 +225,7 @@ function FamilyLayout() {
           >
             <img
               src={logo}
-              alt="عائلة سلمان"
+              alt="شعار عائلة سلمان"
               className="h-12 w-12 object-contain"
             />
 

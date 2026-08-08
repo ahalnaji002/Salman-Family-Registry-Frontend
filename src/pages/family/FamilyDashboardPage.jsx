@@ -204,8 +204,28 @@ function FamilyDashboardPage() {
   const marriedDaughtersCount =
     familyData?.married_daughters?.length || 0;
 
-  const percentage =
-    Number(completionData?.percentage) || 0;
+  const reviewCompleted = [
+    "submitted",
+    "approved",
+  ].includes(
+    editingStatus?.form_status ||
+      completionData?.form_status ||
+      family?.form_status,
+  );
+
+  const completedSteps = [
+    basicInfoCompleted,
+    wivesCompleted,
+    housingCompleted,
+    childrenCompleted,
+    specialCasesCount > 0,
+    marriedDaughtersCount > 0,
+    reviewCompleted,
+  ].filter(Boolean).length;
+
+  const percentage = Math.round(
+    (completedSteps / 7) * 100,
+  );
 
   const formStatus =
     editingStatus?.form_status ||
