@@ -145,10 +145,7 @@ function FamilyLayout() {
 
   const wivesSection = getCompletionSection("wives");
 
-  const wivesRequired =
-    wivesSection?.required ?? family?.marital_status === "married";
-
-  const wivesCompleted = wivesRequired && Boolean(wivesSection?.completed);
+  const wivesCompleted = Boolean(wivesSection?.completed);
 
   const housingCompleted = Boolean(getCompletionSection("housing")?.completed);
 

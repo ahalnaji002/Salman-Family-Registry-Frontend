@@ -35,22 +35,16 @@ function DashboardPage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState("");
 
-  const [supervisors, setSupervisors] = useState(
-    initialSupervisors,
-  );
+  const [supervisors, setSupervisors] = useState(initialSupervisors);
 
-  const [isAddSupervisorOpen, setIsAddSupervisorOpen] =
-    useState(false);
+  const [isAddSupervisorOpen, setIsAddSupervisorOpen] = useState(false);
 
-  const [selectedSupervisor, setSelectedSupervisor] =
-    useState(null);
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
 
-  const [isEditSupervisorOpen, setIsEditSupervisorOpen] =
-    useState(false);
+  const [isEditSupervisorOpen, setIsEditSupervisorOpen] = useState(false);
 
   const getAdminToken = () =>
-    localStorage.getItem("adminToken") ||
-    sessionStorage.getItem("adminToken");
+    localStorage.getItem("adminToken") || sessionStorage.getItem("adminToken");
 
   const clearAdminSession = () => {
     localStorage.removeItem("adminToken");
@@ -88,14 +82,9 @@ function DashboardPage() {
           },
         );
 
-        const data = await response
-          .json()
-          .catch(() => ({}));
+        const data = await response.json().catch(() => ({}));
 
-        if (
-          response.status === 401 ||
-          response.status === 403
-        ) {
+        if (response.status === 401 || response.status === 403) {
           clearAdminSession();
 
           navigate("/admin/login", {
@@ -106,10 +95,7 @@ function DashboardPage() {
         }
 
         if (!response.ok) {
-          throw new Error(
-            data.message ||
-              "تعذر تحميل إحصائيات لوحة التحكم.",
-          );
+          throw new Error(data.message || "تعذر تحميل إحصائيات لوحة التحكم.");
         }
 
         const apiStats =
@@ -155,8 +141,7 @@ function DashboardPage() {
           );
         } else {
           setStatsError(
-            requestError.message ||
-              "حدث خطأ أثناء تحميل إحصائيات لوحة التحكم.",
+            requestError.message || "حدث خطأ أثناء تحميل إحصائيات لوحة التحكم.",
           );
         }
       } finally {
@@ -170,8 +155,7 @@ function DashboardPage() {
   const completionPercentage =
     dashboardStats.totalFamilies > 0
       ? Math.round(
-          (dashboardStats.submittedFamilies /
-            dashboardStats.totalFamilies) *
+          (dashboardStats.submittedFamilies / dashboardStats.totalFamilies) *
             100,
         )
       : 0;
@@ -219,13 +203,10 @@ function DashboardPage() {
     setSelectedSupervisor(null);
   };
 
-  const handleSaveSupervisor = (
-    updatedSupervisor,
-  ) => {
+  const handleSaveSupervisor = (updatedSupervisor) => {
     setSupervisors((currentSupervisors) =>
       currentSupervisors.map((supervisor) =>
-        supervisor.nationalId ===
-        selectedSupervisor?.nationalId
+        supervisor.nationalId === selectedSupervisor?.nationalId
           ? updatedSupervisor
           : supervisor,
       ),
@@ -249,15 +230,11 @@ function DashboardPage() {
             key={stat.title}
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
           >
-            <p className="text-lg font-bold text-[#111c2c]">
-              {stat.title}
-            </p>
+            <p className="text-lg font-bold text-[#111c2c]">{stat.title}</p>
 
             <div className="mt-5 flex items-end justify-between gap-3">
               <p className="text-3xl font-bold text-[#031632]">
-                {statsLoading
-                  ? "..."
-                  : stat.value}
+                {statsLoading ? "..." : stat.value}
               </p>
 
               <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-medium text-[#34446b]">
@@ -276,16 +253,13 @@ function DashboardPage() {
             </h2>
 
             <p className="mt-4 leading-8 text-slate-600">
-              البحث عن الأسرة وعرض بياناتها وتعديلها،
-              مراجعة تفاصيل الاستمارات المرفوعة وتحديث
-              الحالات.
+              البحث عن الأسرة وعرض بياناتها وتعديلها، مراجعة تفاصيل الاستمارات
+              المرفوعة وتحديث الحالات.
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                navigate("/admin/families")
-              }
+              onClick={() => navigate("/admin/families")}
               className="mt-6 w-full rounded-xl border-2 border-[#031632] px-4 py-3 font-semibold text-[#031632] transition hover:bg-[#031632] hover:text-white"
             >
               الانتقال للقائمة
@@ -293,21 +267,16 @@ function DashboardPage() {
           </article>
 
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-bold text-[#031632]">
-              تصدير البيانات
-            </h2>
+            <h2 className="text-xl font-bold text-[#031632]">تصدير البيانات</h2>
 
             <p className="mt-4 leading-8 text-slate-600">
-              تصدير بيانات جميع الأسر المسجلة إلى ملف
-              Excel للاستفادة منها في نسخة احتياطية أو
-              للتحليل الخارجي.
+              تصدير بيانات جميع الأسر المسجلة إلى ملف Excel للاستفادة منها في
+              نسخة احتياطية أو للتحليل الخارجي.
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                navigate("/admin/export")
-              }
+              onClick={() => navigate("/admin/export")}
               className="mt-6 w-full rounded-xl bg-[#dbe6ff] px-4 py-3 font-semibold text-[#031632] transition hover:bg-[#cbd9fb]"
             >
               الانتقال إلى التصدير
@@ -316,21 +285,16 @@ function DashboardPage() {
         </div>
 
         <article className="self-start rounded-2xl border border-slate-200 border-t-4 border-t-[#031632] bg-white p-5 shadow-sm">
-          <h2 className="text-2xl font-bold text-[#031632]">
-            إعدادات التسجيل
-          </h2>
+          <h2 className="text-2xl font-bold text-[#031632]">إعدادات التسجيل</h2>
 
           <p className="mt-4 leading-8 text-slate-600">
-            يتم التحكم في فتح وإغلاق التسجيل وتحديد
-            تاريخ بداية ونهاية فترة التسجيل من صفحة
-            الإعدادات.
+            يتم التحكم في فتح وإغلاق التسجيل وتحديد تاريخ بداية ونهاية فترة
+            التسجيل من صفحة الإعدادات.
           </p>
 
           <button
             type="button"
-            onClick={() =>
-              navigate("/admin/settings")
-            }
+            onClick={() => navigate("/admin/settings")}
             className="mt-6 w-full rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white transition hover:bg-[#1a2b48]"
           >
             الانتقال إلى الإعدادات
@@ -338,121 +302,98 @@ function DashboardPage() {
         </article>
       </div>
 
-      <article className="rounded-2xl border border-slate-200 border-t-4 border-t-[#031632] bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
-          <h2 className="flex items-center gap-3 text-3xl font-bold text-[#031632]">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-7 w-7"
-              aria-hidden="true"
+      {/* كود إدارة المشرفين الحالي كامل كما هو */}
+      {false && (
+        <article className="rounded-2xl border border-slate-200 border-t-4 border-t-[#031632] bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
+            <h2 className="flex items-center gap-3 text-3xl font-bold text-[#031632]">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-7 w-7"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
+                />
+
+                <circle cx="9.5" cy="7" r="4" />
+
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 8v6M22 11h-6"
+                />
+              </svg>
+
+              <span>إدارة المشرفين</span>
+            </h2>
+
+            <button
+              type="button"
+              onClick={() => setIsAddSupervisorOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-[#1a2b48] px-5 py-3 font-semibold text-white transition hover:bg-[#031632]"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
-              />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
+                />
 
-              <circle
-                cx="9.5"
-                cy="7"
-                r="4"
-              />
+                <circle cx="9.5" cy="7" r="4" />
 
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 8v6M22 11h-6"
-              />
-            </svg>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 8v6M22 11h-6"
+                />
+              </svg>
 
-            <span>إدارة المشرفين</span>
-          </h2>
+              <span>إضافة مشرف</span>
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() =>
-              setIsAddSupervisorOpen(true)
-            }
-            className="flex items-center gap-2 rounded-xl bg-[#1a2b48] px-5 py-3 font-semibold text-white transition hover:bg-[#031632]"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-5 w-5"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"
-              />
+          <p className="mt-6 text-slate-600">
+            عدد المشرفين الحاليين:
+            <span className="mr-2 rounded-full bg-[#dbe6ff] px-3 py-1 font-bold text-[#031632]">
+              {supervisors.length}
+            </span>
+          </p>
 
-              <circle
-                cx="9.5"
-                cy="7"
-                r="4"
-              />
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full min-w-[850px] text-right">
+              <thead>
+                <tr className="border-b border-slate-200 text-sm text-slate-600">
+                  <th className="px-4 py-4">الاسم</th>
 
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 8v6M22 11h-6"
-              />
-            </svg>
+                  <th className="px-4 py-4">رقم الهوية</th>
 
-            <span>إضافة مشرف</span>
-          </button>
-        </div>
+                  <th className="px-4 py-4">رقم الجوال</th>
 
-        <p className="mt-6 text-slate-600">
-          عدد المشرفين الحاليين:
-          <span className="mr-2 rounded-full bg-[#dbe6ff] px-3 py-1 font-bold text-[#031632]">
-            {supervisors.length}
-          </span>
-        </p>
+                  <th className="px-4 py-4">الحالة</th>
 
-        <div className="mt-6 overflow-x-auto">
-          <table className="w-full min-w-[850px] text-right">
-            <thead>
-              <tr className="border-b border-slate-200 text-sm text-slate-600">
-                <th className="px-4 py-4">
-                  الاسم
-                </th>
+                  <th className="px-4 py-4">الصلاحيات</th>
 
-                <th className="px-4 py-4">
-                  رقم الهوية
-                </th>
+                  <th className="px-4 py-4">الإجراءات</th>
+                </tr>
+              </thead>
 
-                <th className="px-4 py-4">
-                  رقم الجوال
-                </th>
-
-                <th className="px-4 py-4">
-                  الحالة
-                </th>
-
-                <th className="px-4 py-4">
-                  الصلاحيات
-                </th>
-
-                <th className="px-4 py-4">
-                  الإجراءات
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {supervisors.map(
-                (supervisor) => (
+              <tbody>
+                {supervisors.map((supervisor) => (
                   <tr
-                    key={
-                      supervisor.nationalId
-                    }
+                    key={supervisor.nationalId}
                     className="border-b border-slate-100"
                   >
                     <td className="px-4 py-5 font-medium text-[#111c2c]">
@@ -460,9 +401,7 @@ function DashboardPage() {
                     </td>
 
                     <td className="px-4 py-5 text-slate-600">
-                      {
-                        supervisor.nationalId
-                      }
+                      {supervisor.nationalId}
                     </td>
 
                     <td className="px-4 py-5 text-slate-600">
@@ -471,27 +410,19 @@ function DashboardPage() {
 
                     <td className="px-4 py-5">
                       <span className="rounded-full border border-green-300 bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
-                        {
-                          supervisor.status
-                        }
+                        {supervisor.status}
                       </span>
                     </td>
 
                     <td className="px-4 py-5 text-slate-600">
-                      {
-                        supervisor.permissions
-                      }
+                      {supervisor.permissions}
                     </td>
 
                     <td className="px-4 py-5">
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
-                          onClick={() =>
-                            handleOpenEditSupervisor(
-                              supervisor,
-                            )
-                          }
+                          onClick={() => handleOpenEditSupervisor(supervisor)}
                           aria-label="تعديل المشرف"
                           title="تعديل"
                           className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-[#34446b] transition hover:bg-slate-50"
@@ -532,11 +463,7 @@ function DashboardPage() {
                             className="h-5 w-5"
                             aria-hidden="true"
                           >
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="9"
-                            />
+                            <circle cx="12" cy="12" r="9" />
 
                             <path
                               strokeLinecap="round"
@@ -548,18 +475,16 @@ function DashboardPage() {
                       </div>
                     </td>
                   </tr>
-                ),
-              )}
-            </tbody>
-          </table>
-        </div>
-      </article>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      )}
 
       <AddSupervisorModal
         isOpen={isAddSupervisorOpen}
-        onClose={() =>
-          setIsAddSupervisorOpen(false)
-        }
+        onClose={() => setIsAddSupervisorOpen(false)}
         onAdd={handleAddSupervisor}
       />
 

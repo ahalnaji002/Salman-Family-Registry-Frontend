@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import SaveStatusBadge from "../../components/SaveStatusBadge";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -18,9 +19,7 @@ function MarriedDaughtersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDaughterId, setEditingDaughterId] = useState(null);
 
-  const [daughterForm, setDaughterForm] = useState(
-    initialDaughterForm,
-  );
+  const [daughterForm, setDaughterForm] = useState(initialDaughterForm);
 
   const [errors, setErrors] = useState({});
   const [pageError, setPageError] = useState("");
@@ -33,8 +32,7 @@ function MarriedDaughtersPage() {
   const [isSaved, setIsSaved] = useState(false);
 
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const getAuthHeaders = () => ({
     Authorization: `Bearer ${token}`,
@@ -86,29 +84,20 @@ function MarriedDaughtersPage() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "تعذر تحميل بيانات البنات المتزوجات.",
-        );
+        throw new Error(data.message || "تعذر تحميل بيانات البنات المتزوجات.");
       }
 
       const apiDaughters =
-        data.data?.married_daughters ||
-        data.married_daughters ||
-        [];
+        data.data?.married_daughters || data.married_daughters || [];
 
-      setMarriedDaughters(
-        apiDaughters.map(mapDaughterFromApi),
-      );
+      setMarriedDaughters(apiDaughters.map(mapDaughterFromApi));
 
       if (apiDaughters.length > 0) {
         setIsSaved(true);
       }
     } catch (requestError) {
       if (requestError instanceof TypeError) {
-        setPageError(
-          "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.",
-        );
+        setPageError("تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.");
       } else {
         setPageError(
           requestError.message ||
@@ -150,18 +139,11 @@ function MarriedDaughtersPage() {
     let finalValue = value;
 
     if (name === "nationalId") {
-      finalValue = value
-        .replace(/\D/g, "")
-        .slice(0, 9);
+      finalValue = value.replace(/\D/g, "").slice(0, 9);
     }
 
-    if (
-      name === "phone" ||
-      name === "husbandPhone"
-    ) {
-      finalValue = value
-        .replace(/\D/g, "")
-        .slice(0, 10);
+    if (name === "phone" || name === "husbandPhone") {
+      finalValue = value.replace(/\D/g, "").slice(0, 10);
     }
 
     setDaughterForm((currentForm) => ({
@@ -182,65 +164,44 @@ function MarriedDaughtersPage() {
   const validateDaughterForm = () => {
     const newErrors = {};
 
-    const daughterName =
-      daughterForm.fullName.trim();
+    const daughterName = daughterForm.fullName.trim();
 
-    const husbandName =
-      daughterForm.husbandName.trim();
+    const husbandName = daughterForm.husbandName.trim();
 
     if (!daughterName) {
-      newErrors.fullName =
-        "يرجى إدخال اسم الابنة.";
+      newErrors.fullName = "يرجى إدخال اسم الابنة.";
     } else {
-      const daughterNameParts = daughterName
-        .split(/\s+/)
-        .filter(Boolean);
+      const daughterNameParts = daughterName.split(/\s+/).filter(Boolean);
 
       if (daughterNameParts.length > 2) {
-        newErrors.fullName =
-          "ادخل فقط اسم الابنة";
+        newErrors.fullName = "ادخل فقط اسم الابنة";
       }
     }
 
     if (!/^\d{9}$/.test(daughterForm.nationalId)) {
-      newErrors.nationalId =
-        "يرجى إدخال رقم هوية مكون من 9 أرقام.";
+      newErrors.nationalId = "يرجى إدخال رقم هوية مكون من 9 أرقام.";
     }
 
     if (!husbandName) {
-      newErrors.husbandName =
-        "يرجى إدخال اسم الزوج الرباعي.";
+      newErrors.husbandName = "يرجى إدخال اسم الزوج الرباعي.";
     } else {
-      const husbandNameParts = husbandName
-        .split(/\s+/)
-        .filter(Boolean);
+      const husbandNameParts = husbandName.split(/\s+/).filter(Boolean);
 
       if (husbandNameParts.length < 4) {
-        newErrors.husbandName =
-          "اسم الزوج يجب أن يكون رباعيًا على الأقل.";
+        newErrors.husbandName = "اسم الزوج يجب أن يكون رباعيًا على الأقل.";
       }
     }
 
     if (!daughterForm.phone) {
-      newErrors.phone =
-        "يرجى إدخال رقم جوال البنت.";
-    } else if (
-      !/^05\d{8}$/.test(daughterForm.phone)
-    ) {
-      newErrors.phone =
-        "يرجى إدخال رقم جوال صحيح يبدأ بـ 05.";
+      newErrors.phone = "يرجى إدخال رقم جوال البنت.";
+    } else if (!/^05\d{8}$/.test(daughterForm.phone)) {
+      newErrors.phone = "يرجى إدخال رقم جوال صحيح يبدأ بـ 05.";
     }
 
     if (!daughterForm.husbandPhone) {
-      newErrors.husbandPhone =
-        "يرجى إدخال رقم جوال الزوج.";
-    } else if (
-      !/^05\d{8}$/.test(
-        daughterForm.husbandPhone,
-      )
-    ) {
-      newErrors.husbandPhone =
-        "يرجى إدخال رقم جوال الزوج بشكل صحيح.";
+      newErrors.husbandPhone = "يرجى إدخال رقم جوال الزوج.";
+    } else if (!/^05\d{8}$/.test(daughterForm.husbandPhone)) {
+      newErrors.husbandPhone = "يرجى إدخال رقم جوال الزوج بشكل صحيح.";
     }
 
     setErrors(newErrors);
@@ -251,10 +212,7 @@ function MarriedDaughtersPage() {
   const handleSaveDaughter = async (event) => {
     event.preventDefault();
 
-    if (
-      !validateDaughterForm() ||
-      savingDaughter
-    ) {
+    if (!validateDaughterForm() || savingDaughter) {
       return;
     }
 
@@ -263,17 +221,14 @@ function MarriedDaughtersPage() {
     setSuccessMessage("");
 
     try {
-      const isEditing =
-        Boolean(editingDaughterId);
+      const isEditing = Boolean(editingDaughterId);
 
       const url = isEditing
         ? `${API_BASE_URL}/api/family/married-daughters/${editingDaughterId}`
         : `${API_BASE_URL}/api/family/married-daughters`;
 
       const response = await fetch(url, {
-        method: isEditing
-          ? "PATCH"
-          : "POST",
+        method: isEditing ? "PATCH" : "POST",
 
         headers: {
           ...getAuthHeaders(),
@@ -281,26 +236,19 @@ function MarriedDaughtersPage() {
         },
 
         body: JSON.stringify({
-          full_name:
-            daughterForm.fullName.trim(),
+          full_name: daughterForm.fullName.trim(),
 
-          national_id:
-            daughterForm.nationalId,
+          national_id: daughterForm.nationalId,
 
-          phone:
-            daughterForm.phone.trim(),
+          phone: daughterForm.phone.trim(),
 
-          husband_full_name:
-            daughterForm.husbandName.trim(),
+          husband_full_name: daughterForm.husbandName.trim(),
 
-          husband_phone:
-            daughterForm.husbandPhone.trim(),
+          husband_phone: daughterForm.husbandPhone.trim(),
         }),
       });
 
-      const data = await response
-        .json()
-        .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
         handleUnauthorized();
@@ -331,8 +279,7 @@ function MarriedDaughtersPage() {
       );
     } catch (requestError) {
       setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حفظ بيانات البنت المتزوجة.",
+        requestError.message || "حدث خطأ أثناء حفظ بيانات البنت المتزوجة.",
       );
     } finally {
       setSavingDaughter(false);
@@ -347,8 +294,7 @@ function MarriedDaughtersPage() {
       nationalId: daughter.nationalId || "",
       husbandName: daughter.husbandName || "",
       phone: daughter.phone || "",
-      husbandPhone:
-        daughter.husbandPhone || "",
+      husbandPhone: daughter.husbandPhone || "",
     });
 
     setErrors({});
@@ -357,9 +303,7 @@ function MarriedDaughtersPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteDaughter = async (
-    daughterId,
-  ) => {
+  const handleDeleteDaughter = async (daughterId) => {
     if (deletingDaughterId) {
       return;
     }
@@ -385,9 +329,7 @@ function MarriedDaughtersPage() {
         },
       );
 
-      const data = await response
-        .json()
-        .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
       if (response.status === 401) {
         handleUnauthorized();
@@ -395,29 +337,19 @@ function MarriedDaughtersPage() {
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "تعذر حذف بيانات البنت المتزوجة.",
-        );
+        throw new Error(data.message || "تعذر حذف بيانات البنت المتزوجة.");
       }
 
-      setMarriedDaughters(
-        (currentDaughters) =>
-          currentDaughters.filter(
-            (daughter) =>
-              daughter.id !== daughterId,
-          ),
+      setMarriedDaughters((currentDaughters) =>
+        currentDaughters.filter((daughter) => daughter.id !== daughterId),
       );
 
       setIsSaved(true);
 
-      setSuccessMessage(
-        "تم حذف بيانات البنت المتزوجة بنجاح.",
-      );
+      setSuccessMessage("تم حذف بيانات البنت المتزوجة بنجاح.");
     } catch (requestError) {
       setPageError(
-        requestError.message ||
-          "حدث خطأ أثناء حذف بيانات البنت المتزوجة.",
+        requestError.message || "حدث خطأ أثناء حذف بيانات البنت المتزوجة.",
       );
     } finally {
       setDeletingDaughterId(null);
@@ -427,9 +359,7 @@ function MarriedDaughtersPage() {
   const handleDraftSave = () => {
     setIsSaved(true);
 
-    setSuccessMessage(
-      "تم حفظ بيانات البنات المتزوجات.",
-    );
+    setSuccessMessage("تم حفظ بيانات البنات المتزوجات.");
   };
 
   const handleSaveAndContinue = () => {
@@ -462,74 +392,33 @@ function MarriedDaughtersPage() {
   return (
     <section className="px-4 py-8 sm:px-6 md:px-8 md:py-10">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
-              بيانات البنات المتزوجات
-            </h1>
-
-            <p className="mt-2 text-sm leading-7 text-slate-500">
-              أضف البنات المتزوجات فقط، ولا تضفهن ضمن قسم الأبناء.
-            </p>
-          </div>
-
-          <span
-            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-              isSaved
-                ? "bg-green-50 text-green-700"
-                : "bg-[#eef3ff] text-[#031632]"
-            }`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-4 w-4"
-            >
-              {isSaved ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m5.25 12.75 4.5 4.5 9-10.5"
-                />
-              ) : (
-                <>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6l4 2"
-                  />
-
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                  />
-                </>
-              )}
-            </svg>
-
-            {isSaved
-              ? "تم حفظ التغييرات"
-              : "لم تحفظ التغييرات"}
-          </span>
-        </div>
-
-        {pageError && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
-            {pageError}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
-            {successMessage}
-          </div>
-        )}
-
         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6 md:p-8">
+          <div className="mb-6 flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-[#031632] md:text-2xl">
+                بيانات البنات المتزوجات
+              </h1>
+
+              <p className="mt-2 text-sm leading-7 text-slate-500">
+                أضف البنات المتزوجات فقط، ولا تضفهن ضمن قسم الأبناء.
+              </p>
+            </div>
+
+            <SaveStatusBadge isSaved={isSaved} saving={savingDaughter} />
+          </div>
+
+          {pageError && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700">
+              {pageError}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium leading-7 text-green-700">
+              {successMessage}
+            </div>
+          )}
+
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-base font-bold text-[#031632]">
               البنات المتزوجات المضافات
@@ -570,8 +459,8 @@ function MarriedDaughtersPage() {
               </h3>
 
               <p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">
-                اضغط على الزر لإضافة بيانات بنت متزوجة لضمان اكتمال
-                السجل العائلي بدقة.
+                اضغط على الزر لإضافة بيانات بنت متزوجة لضمان اكتمال السجل
+                العائلي بدقة.
               </p>
 
               <button
@@ -593,106 +482,83 @@ function MarriedDaughtersPage() {
                     d="M12 5v14m7-7H5"
                   />
                 </svg>
-
                 إضافة بنت متزوجة
               </button>
             </div>
           ) : (
             <div className="py-6">
               <div className="grid gap-4 md:grid-cols-2">
-                {marriedDaughters.map(
-                  (daughter, index) => (
-                    <div
-                      key={daughter.id}
-                      className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
-                    >
-                      <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-                        <div>
-                          <span className="text-xs font-semibold text-[#d8ad55]">
-                            البنت المتزوجة{" "}
-                            {index + 1}
-                          </span>
+                {marriedDaughters.map((daughter, index) => (
+                  <div
+                    key={daughter.id}
+                    className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
+                  >
+                    <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                      <div>
+                        <span className="text-xs font-semibold text-[#d8ad55]">
+                          البنت المتزوجة {index + 1}
+                        </span>
 
-                          <h3 className="mt-1 text-base font-bold text-[#031632]">
-                            {daughter.fullName}
-                          </h3>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleEditDaughter(
-                                daughter,
-                              )
-                            }
-                            className="flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
-                          >
-                            تعديل
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={
-                              deletingDaughterId ===
-                              daughter.id
-                            }
-                            onClick={() =>
-                              handleDeleteDaughter(
-                                daughter.id,
-                              )
-                            }
-                            className="flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-500 transition hover:bg-red-50 disabled:opacity-50"
-                          >
-                            حذف
-                          </button>
-                        </div>
+                        <h3 className="mt-1 text-base font-bold text-[#031632]">
+                          {daughter.fullName}
+                        </h3>
                       </div>
 
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            رقم الهوية
-                          </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditDaughter(daughter)}
+                          className="flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
+                        >
+                          تعديل
+                        </button>
 
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {daughter.nationalId}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            اسم الزوج
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {daughter.husbandName}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            رقم جوال البنت
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {daughter.phone}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">
-                            رقم جوال الزوج
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {daughter.husbandPhone}
-                          </p>
-                        </div>
+                        <button
+                          type="button"
+                          disabled={deletingDaughterId === daughter.id}
+                          onClick={() => handleDeleteDaughter(daughter.id)}
+                          className="flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-500 transition hover:bg-red-50 disabled:opacity-50"
+                        >
+                          حذف
+                        </button>
                       </div>
                     </div>
-                  ),
-                )}
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs text-slate-500">رقم الهوية</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {daughter.nationalId}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">اسم الزوج</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {daughter.husbandName}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">رقم جوال البنت</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {daughter.phone}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">رقم جوال الزوج</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {daughter.husbandPhone}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <button
@@ -704,40 +570,34 @@ function MarriedDaughtersPage() {
               </button>
             </div>
           )}
-        </div>
 
-        <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            to="/family/special-cases"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
-          >
-            <span aria-hidden="true">
-              →
-            </span>
-
-            السابق
-          </Link>
-
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <button
-              type="button"
-              onClick={handleDraftSave}
-              className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+          <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              to="/family/special-cases"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] sm:w-auto"
             >
-              حفظ كمسودة
-            </button>
+              <span aria-hidden="true">→</span>
+              السابق
+            </Link>
 
-            <button
-              type="button"
-              onClick={handleSaveAndContinue}
-              className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-            >
-              حفظ والمتابعة
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                onClick={handleDraftSave}
+                className="h-11 whitespace-nowrap rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+              >
+                حفظ كمسودة
+              </button>
 
-              <span aria-hidden="true">
-                ←
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={handleSaveAndContinue}
+                className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
+              >
+                حفظ والمتابعة
+                <span aria-hidden="true">←</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -749,9 +609,7 @@ function MarriedDaughtersPage() {
         >
           <div
             className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(event) =>
-              event.stopPropagation()
-            }
+            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
               <div>
@@ -777,17 +635,11 @@ function MarriedDaughtersPage() {
               </button>
             </div>
 
-            <form
-              onSubmit={handleSaveDaughter}
-              className="p-5 sm:p-6"
-            >
+            <form onSubmit={handleSaveDaughter} className="p-5 sm:p-6">
               <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-[#031632]">
-                    اسم الابنة{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    اسم الابنة <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -797,9 +649,7 @@ function MarriedDaughtersPage() {
                     onChange={handleDaughterFormChange}
                     disabled={savingDaughter}
                     placeholder="أدخل اسم الابنة فقط"
-                    className={inputClassName(
-                      "fullName",
-                    )}
+                    className={inputClassName("fullName")}
                   />
 
                   {errors.fullName && (
@@ -811,10 +661,7 @@ function MarriedDaughtersPage() {
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-[#031632]">
-                    رقم الهوية{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    رقم الهوية <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -840,10 +687,7 @@ function MarriedDaughtersPage() {
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-[#031632]">
-                    اسم الزوج الرباعي{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    اسم الزوج الرباعي <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -853,9 +697,7 @@ function MarriedDaughtersPage() {
                     onChange={handleDaughterFormChange}
                     disabled={savingDaughter}
                     placeholder="أدخل اسم الزوج الرباعي"
-                    className={inputClassName(
-                      "husbandName",
-                    )}
+                    className={inputClassName("husbandName")}
                   />
 
                   {errors.husbandName && (
@@ -867,10 +709,7 @@ function MarriedDaughtersPage() {
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-[#031632]">
-                    رقم جوال البنت{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    رقم جوال البنت <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -896,10 +735,7 @@ function MarriedDaughtersPage() {
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-[#031632]">
-                    رقم جوال الزوج{" "}
-                    <span className="text-red-500">
-                      *
-                    </span>
+                    رقم جوال الزوج <span className="text-red-500">*</span>
                   </label>
 
                   <input

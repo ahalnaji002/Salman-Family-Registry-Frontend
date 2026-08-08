@@ -32,21 +32,17 @@ const formatDate = (dateValue) => {
 function FamilyDashboardPage() {
   const navigate = useNavigate();
 
-  const [isContactModalOpen, setIsContactModalOpen] =
-    useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const [familyData, setFamilyData] = useState(null);
-  const [completionData, setCompletionData] =
-    useState(null);
-  const [editingStatus, setEditingStatus] =
-    useState(null);
+  const [completionData, setCompletionData] = useState(null);
+  const [editingStatus, setEditingStatus] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -64,27 +60,18 @@ function FamilyDashboardPage() {
           Accept: "application/json",
         };
 
-        const [
-          familyResponse,
-          completionResponse,
-          editingResponse,
-        ] = await Promise.all([
-          fetch("http://localhost:5000/api/family", {
-            headers,
-          }),
-          fetch(
-            "http://localhost:5000/api/family/completion",
-            {
+        const [familyResponse, completionResponse, editingResponse] =
+          await Promise.all([
+            fetch("http://localhost:5000/api/family", {
               headers,
-            },
-          ),
-          fetch(
-            "http://localhost:5000/api/family/editing-status",
-            {
+            }),
+            fetch("http://localhost:5000/api/family/completion", {
               headers,
-            },
-          ),
-        ]);
+            }),
+            fetch("http://localhost:5000/api/family/editing-status", {
+              headers,
+            }),
+          ]);
 
         if (
           familyResponse.status === 401 ||
@@ -100,44 +87,30 @@ function FamilyDashboardPage() {
           return;
         }
 
-        const familyResult = await familyResponse
+        const familyResult = await familyResponse.json().catch(() => ({}));
+
+        const completionResult = await completionResponse
           .json()
           .catch(() => ({}));
 
-        const completionResult =
-          await completionResponse
-            .json()
-            .catch(() => ({}));
-
-        const editingResult = await editingResponse
-          .json()
-          .catch(() => ({}));
+        const editingResult = await editingResponse.json().catch(() => ({}));
 
         if (!familyResponse.ok) {
-          throw new Error(
-            familyResult.message ||
-              "تعذر جلب بيانات الأسرة.",
-          );
+          throw new Error(familyResult.message || "تعذر جلب بيانات الأسرة.");
         }
 
         if (!completionResponse.ok) {
           throw new Error(
-            completionResult.message ||
-              "تعذر جلب نسبة اكتمال الاستمارة.",
+            completionResult.message || "تعذر جلب نسبة اكتمال الاستمارة.",
           );
         }
 
         if (!editingResponse.ok) {
-          throw new Error(
-            editingResult.message ||
-              "تعذر جلب حالة التعديل.",
-          );
+          throw new Error(editingResult.message || "تعذر جلب حالة التعديل.");
         }
 
         setFamilyData(familyResult.data || null);
-        setCompletionData(
-          completionResult.data || null,
-        );
+        setCompletionData(completionResult.data || null);
         setEditingStatus(editingResult.data || null);
       } catch (requestError) {
         if (requestError instanceof TypeError) {
@@ -145,10 +118,7 @@ function FamilyDashboardPage() {
             "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
           );
         } else {
-          setError(
-            requestError.message ||
-              "حدث خطأ أثناء تحميل لوحة الأسرة.",
-          );
+          setError(requestError.message || "حدث خطأ أثناء تحميل لوحة الأسرة.");
         }
       } finally {
         setLoading(false);
@@ -160,13 +130,10 @@ function FamilyDashboardPage() {
 
   const family = familyData?.family || null;
 
-  const completionSections =
-    completionData?.sections || [];
+  const completionSections = completionData?.sections || [];
 
   const getCompletionSection = (key) =>
-    completionSections.find(
-      (section) => section.key === key,
-    );
+    completionSections.find((section) => section.key === key);
 
   const familyHeadCompleted = Boolean(
     getCompletionSection("family_head")?.completed,
@@ -176,38 +143,23 @@ function FamilyDashboardPage() {
     getCompletionSection("personal_photo")?.completed,
   );
 
-  const housingCompleted = Boolean(
-    getCompletionSection("housing")?.completed,
-  );
+  const housingCompleted = Boolean(getCompletionSection("housing")?.completed);
 
-  const wivesSection =
-    getCompletionSection("wives");
+  const wivesSection = getCompletionSection("wives");
 
   const childrenCompleted = Boolean(
     getCompletionSection("children")?.completed,
   );
 
-  const basicInfoCompleted =
-    familyHeadCompleted && photoCompleted;
+  const basicInfoCompleted = familyHeadCompleted && photoCompleted;
 
-  const wivesRequired =
-    wivesSection?.required ??
-    family?.marital_status === "married";
+  const wivesCompleted = Boolean(wivesSection?.completed);
 
-  const wivesCompleted =
-    wivesRequired &&
-    Boolean(wivesSection?.completed);
+  const specialCasesCount = familyData?.special_cases?.length || 0;
 
-  const specialCasesCount =
-    familyData?.special_cases?.length || 0;
+  const marriedDaughtersCount = familyData?.married_daughters?.length || 0;
 
-  const marriedDaughtersCount =
-    familyData?.married_daughters?.length || 0;
-
-  const reviewCompleted = [
-    "submitted",
-    "approved",
-  ].includes(
+  const reviewCompleted = ["submitted", "approved"].includes(
     editingStatus?.form_status ||
       completionData?.form_status ||
       family?.form_status,
@@ -223,9 +175,7 @@ function FamilyDashboardPage() {
     reviewCompleted,
   ].filter(Boolean).length;
 
-  const percentage = Math.round(
-    (completedSteps / 7) * 100,
-  );
+  const percentage = Math.round((completedSteps / 7) * 100);
 
   const formStatus =
     editingStatus?.form_status ||
@@ -233,31 +183,21 @@ function FamilyDashboardPage() {
     family?.form_status ||
     "draft";
 
-  const canEdit =
-    editingStatus?.can_edit ??
-    Boolean(family?.editing_enabled);
+  const canEdit = editingStatus?.can_edit ?? Boolean(family?.editing_enabled);
 
-  const statusLabel =
-    formStatusLabels[formStatus] || formStatus;
+  const statusLabel = formStatusLabels[formStatus] || formStatus;
 
-  const registrationDeadline =
-    editingStatus?.registration_closes_at || null;
+  const registrationDeadline = editingStatus?.registration_closes_at || null;
 
-  const formattedRegistrationDeadline =
-    formatDate(registrationDeadline);
+  const formattedRegistrationDeadline = formatDate(registrationDeadline);
 
   const sections = useMemo(
     () => [
       {
         title: "البيانات الأساسية",
-        description:
-          "المعلومات الشخصية وبيانات التواصل",
-        status: basicInfoCompleted
-          ? "مكتمل"
-          : "غير مكتمل",
-        state: basicInfoCompleted
-          ? "completed"
-          : "incomplete",
+        description: "المعلومات الشخصية وبيانات التواصل",
+        status: basicInfoCompleted ? "مكتمل" : "غير مكتمل",
+        state: basicInfoCompleted ? "completed" : "incomplete",
         path: "/family/basic-info",
         icon: (
           <svg
@@ -278,14 +218,10 @@ function FamilyDashboardPage() {
       },
 
       {
-  title: "الزوجات",
-  description: "بيانات الزوجة أو الزوجات",
-  status: wivesCompleted
-    ? "مكتمل"
-    : "غير مكتمل",
-  state: wivesCompleted
-    ? "completed"
-    : "incomplete",
+        title: "الزوجات",
+        description: "بيانات الزوجة أو الزوجات",
+        status: wivesCompleted ? "مكتمل" : "غير مكتمل",
+        state: wivesCompleted ? "completed" : "incomplete",
         path: "/family/wives",
         icon: (
           <svg
@@ -308,12 +244,8 @@ function FamilyDashboardPage() {
       {
         title: "السكن",
         description: "بيانات السكن السابق والحالي",
-        status: housingCompleted
-          ? "مكتمل"
-          : "غير مكتمل",
-        state: housingCompleted
-          ? "completed"
-          : "incomplete",
+        status: housingCompleted ? "مكتمل" : "غير مكتمل",
+        state: housingCompleted ? "completed" : "incomplete",
         path: "/family/housing",
         icon: (
           <svg
@@ -336,12 +268,8 @@ function FamilyDashboardPage() {
       {
         title: "الأبناء",
         description: "إضافة بيانات الأبناء",
-        status: childrenCompleted
-          ? "مكتمل"
-          : "لم يبدأ",
-        state: childrenCompleted
-          ? "completed"
-          : "incomplete",
+        status: childrenCompleted ? "مكتمل" : "لم يبدأ",
+        state: childrenCompleted ? "completed" : "incomplete",
         path: "/family/children",
         icon: (
           <svg
@@ -363,16 +291,9 @@ function FamilyDashboardPage() {
 
       {
         title: "الحالات الخاصة",
-        description:
-          "بيانات المرضى والجرحى وذوي الإعاقة والشهداء",
-        status:
-          specialCasesCount > 0
-            ? "مكتمل"
-            : "لم يبدأ",
-        state:
-          specialCasesCount > 0
-            ? "completed"
-            : "incomplete",
+        description: "بيانات المرضى والجرحى وذوي الإعاقة والشهداء",
+        status: specialCasesCount > 0 ? "مكتمل" : "لم يبدأ",
+        state: specialCasesCount > 0 ? "completed" : "incomplete",
         path: "/family/special-cases",
         icon: (
           <svg
@@ -399,16 +320,9 @@ function FamilyDashboardPage() {
 
       {
         title: "البنات المتزوجات",
-        description:
-          "بيانات البنات المتزوجات وأزواجهن",
-        status:
-          marriedDaughtersCount > 0
-            ? "مكتمل"
-            : "لم يبدأ",
-        state:
-          marriedDaughtersCount > 0
-            ? "completed"
-            : "incomplete",
+        description: "بيانات البنات المتزوجات وأزواجهن",
+        status: marriedDaughtersCount > 0 ? "مكتمل" : "لم يبدأ",
+        state: marriedDaughtersCount > 0 ? "completed" : "incomplete",
         path: "/family/married-daughters",
         icon: (
           <svg
@@ -435,7 +349,6 @@ function FamilyDashboardPage() {
     ],
     [
       basicInfoCompleted,
-      wivesRequired,
       wivesCompleted,
       housingCompleted,
       childrenCompleted,
@@ -444,15 +357,13 @@ function FamilyDashboardPage() {
     ],
   );
 
-  const whatsappMessage =
-    `السلام عليكم، أواجه مشكلة في تعبئة استمارة عائلة سلمان. اسم رب الأسرة: ${
-      family?.full_name || ""
-    }.`;
+  const whatsappMessage = `السلام عليكم، أواجه مشكلة في تعبئة استمارة عائلة سلمان. اسم رب الأسرة: ${
+    family?.full_name || ""
+  }.`;
 
-  const whatsappLink =
-    `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-      whatsappMessage,
-    )}`;
+  const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+    whatsappMessage,
+  )}`;
 
   if (loading) {
     return (
@@ -479,15 +390,11 @@ function FamilyDashboardPage() {
               تعذر تحميل لوحة الأسرة
             </h2>
 
-            <p className="mt-2 text-sm leading-7 text-red-600">
-              {error}
-            </p>
+            <p className="mt-2 text-sm leading-7 text-red-600">{error}</p>
 
             <button
               type="button"
-              onClick={() =>
-                window.location.reload()
-              }
+              onClick={() => window.location.reload()}
               className="mt-5 rounded-xl bg-[#031632] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#142947]"
             >
               إعادة المحاولة
@@ -531,36 +438,24 @@ function FamilyDashboardPage() {
               </div>
 
               <div className="mt-5 flex items-center justify-between gap-4 text-sm">
-                <span className="text-slate-500">
-                  نسبة الإنجاز الإجمالية
-                </span>
+                <span className="text-slate-500">نسبة الإنجاز الإجمالية</span>
 
-                <span className="font-bold text-[#031632]">
-                  {percentage}%
-                </span>
+                <span className="font-bold text-[#031632]">{percentage}%</span>
               </div>
 
               <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200">
                 <div
                   className="h-full rounded-full bg-[#d8ad55] transition-all duration-500"
                   style={{
-                    width: `${Math.min(
-                      Math.max(percentage, 0),
-                      100,
-                    )}%`,
+                    width: `${Math.min(Math.max(percentage, 0), 100)}%`,
                   }}
                 />
               </div>
 
               <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
-                <span>
-                  آخر تعديل:{" "}
-                  {formatDate(family?.updated_at)}
-                </span>
+                <span>آخر تعديل: {formatDate(family?.updated_at)}</span>
 
-                <span>
-                  الموعد النهائي: {formattedRegistrationDeadline}
-                </span>
+                <span>الموعد النهائي: {formattedRegistrationDeadline}</span>
               </div>
             </div>
 
@@ -641,17 +536,13 @@ function FamilyDashboardPage() {
         )}
 
         <div className="mt-8">
-          <h2 className="text-lg font-bold text-[#031632]">
-            أقسام الاستمارة
-          </h2>
+          <h2 className="text-lg font-bold text-[#031632]">أقسام الاستمارة</h2>
 
           <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {sections.map((section) => {
-              const completed =
-                section.state === "completed";
+              const completed = section.state === "completed";
 
-              const optional =
-                section.state === "optional";
+              const optional = section.state === "optional";
 
               return (
                 <Link
@@ -706,9 +597,7 @@ function FamilyDashboardPage() {
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl bg-[#031632] px-6 py-5 text-white sm:flex-row">
           <div>
-            <h2 className="text-base font-bold">
-              هل واجهتك مشكلة؟
-            </h2>
+            <h2 className="text-base font-bold">هل واجهتك مشكلة؟</h2>
 
             <p className="mt-1 text-sm text-slate-300">
               نحن هنا لمساعدتك في أي خطوة خلال تعبئة الاستمارة.
@@ -717,9 +606,7 @@ function FamilyDashboardPage() {
 
           <button
             type="button"
-            onClick={() =>
-              setIsContactModalOpen(true)
-            }
+            onClick={() => setIsContactModalOpen(true)}
             className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#031632] transition hover:bg-[#f5f3ed]"
           >
             تواصل مع المسؤول
@@ -731,9 +618,7 @@ function FamilyDashboardPage() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#031632]/55 p-4 backdrop-blur-sm"
           onMouseDown={(event) => {
-            if (
-              event.target === event.currentTarget
-            ) {
+            if (event.target === event.currentTarget) {
               setIsContactModalOpen(false);
             }
           }}
@@ -752,9 +637,7 @@ function FamilyDashboardPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setIsContactModalOpen(false)
-                }
+                onClick={() => setIsContactModalOpen(false)}
                 aria-label="إغلاق"
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-[#031632]"
               >
@@ -764,14 +647,9 @@ function FamilyDashboardPage() {
 
             <div className="p-5 sm:p-6">
               <div className="rounded-xl bg-[#f8f8fe] p-4">
-                <p className="font-bold text-[#031632]">
-                  {RESPONSIBLE_NAME}
-                </p>
+                <p className="font-bold text-[#031632]">{RESPONSIBLE_NAME}</p>
 
-                <p
-                  dir="ltr"
-                  className="mt-1 text-left text-sm text-slate-500"
-                >
+                <p dir="ltr" className="mt-1 text-left text-sm text-slate-500">
                   +{WHATSAPP_NUMBER}
                 </p>
               </div>
@@ -784,9 +662,7 @@ function FamilyDashboardPage() {
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
                 <button
                   type="button"
-                  onClick={() =>
-                    setIsContactModalOpen(false)
-                  }
+                  onClick={() => setIsContactModalOpen(false)}
                   className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600"
                 >
                   إلغاء

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import SaveStatusBadge from "../../components/SaveStatusBadge";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -33,8 +34,7 @@ function BasicInfoPage() {
   const [successMessage, setSuccessMessage] = useState("");
 
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const getAuthHeaders = () => ({
     Authorization: `Bearer ${token}`,
@@ -52,12 +52,9 @@ function BasicInfoPage() {
       setError("");
 
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/family`,
-          {
-            headers: getAuthHeaders(),
-          },
-        );
+        const response = await fetch(`${API_BASE_URL}/api/family`, {
+          headers: getAuthHeaders(),
+        });
 
         const data = await response.json().catch(() => ({}));
 
@@ -72,9 +69,7 @@ function BasicInfoPage() {
         }
 
         if (!response.ok) {
-          throw new Error(
-            data.message || "تعذر جلب بيانات الأسرة.",
-          );
+          throw new Error(data.message || "تعذر جلب بيانات الأسرة.");
         }
 
         const family = data.data?.family;
@@ -96,9 +91,7 @@ function BasicInfoPage() {
           incomeCategory: family.income_category || "",
         });
 
-        setExistingPhotoPath(
-          family.personal_photo_path || "",
-        );
+        setExistingPhotoPath(family.personal_photo_path || "");
 
         setIsSaved(true);
       } catch (requestError) {
@@ -107,10 +100,7 @@ function BasicInfoPage() {
             "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
           );
         } else {
-          setError(
-            requestError.message ||
-              "حدث خطأ أثناء تحميل البيانات.",
-          );
+          setError(requestError.message || "حدث خطأ أثناء تحميل البيانات.");
         }
       } finally {
         setLoading(false);
@@ -145,16 +135,14 @@ function BasicInfoPage() {
       ...currentData,
       [name]: finalValue,
 
-      ...(name === "workStatus" &&
-      finalValue !== "employee"
+      ...(name === "workStatus" && finalValue !== "employee"
         ? {
             jobSector: "",
             otherJobSector: "",
           }
         : {}),
 
-      ...(name === "jobSector" &&
-      finalValue !== "other"
+      ...(name === "jobSector" && finalValue !== "other"
         ? {
             otherJobSector: "",
           }
@@ -173,25 +161,17 @@ function BasicInfoPage() {
       return;
     }
 
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(selectedFile.type)) {
-      setError(
-        "يرجى اختيار صورة بصيغة JPG أو PNG أو WebP.",
-      );
+      setError("يرجى اختيار صورة بصيغة JPG أو PNG أو WebP.");
 
       event.target.value = "";
       return;
     }
 
     if (selectedFile.size > 2 * 1024 * 1024) {
-      setError(
-        "حجم الصورة يجب ألا يتجاوز 2 ميجابايت.",
-      );
+      setError("حجم الصورة يجب ألا يتجاوز 2 ميجابايت.");
 
       event.target.value = "";
       return;
@@ -240,14 +220,12 @@ function BasicInfoPage() {
       return "حالة العمل مطلوبة.";
     }
 
-    if (
-      formData.workStatus === "employee" &&
-      !formData.jobSector
-    ) {
+    if (formData.workStatus === "employee" && !formData.jobSector) {
       return "جهة العمل مطلوبة عند اختيار موظف.";
     }
 
     if (
+      formData.workStatus === "employee" &&
       formData.jobSector === "other" &&
       !formData.otherJobSector.trim()
     ) {
@@ -268,39 +246,35 @@ function BasicInfoPage() {
       throw new Error(validationError);
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/family`,
-      {
-        method: "PATCH",
-        headers: {
-          ...getAuthHeaders(),
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          full_name: formData.fullName.trim(),
-          national_id: formData.nationalId,
-          date_of_birth: formData.dateOfBirth,
-          phone: formData.phone,
-          blood_type: formData.bloodType || null,
-          marital_status: formData.maritalStatus,
-          work_status: formData.workStatus,
-
-          job_type:
-            formData.workStatus === "employee"
-              ? formData.jobSector || null
-              : null,
-
-          other_job_type:
-            formData.workStatus === "employee" &&
-            formData.jobSector === "other"
-              ? formData.otherJobSector.trim()
-              : null,
-
-          income_category: formData.incomeCategory,
-        }),
+    const response = await fetch(`${API_BASE_URL}/api/family`, {
+      method: "PATCH",
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
       },
-    );
+
+      body: JSON.stringify({
+        full_name: formData.fullName.trim(),
+        national_id: formData.nationalId,
+        date_of_birth: formData.dateOfBirth,
+        phone: formData.phone,
+        blood_type: formData.bloodType || null,
+        marital_status: formData.maritalStatus,
+        work_status: formData.workStatus,
+
+        job_type:
+          formData.workStatus === "employee"
+            ? formData.jobSector || null
+            : null,
+
+        other_job_type:
+          formData.workStatus === "employee" && formData.jobSector === "other"
+            ? formData.otherJobSector.trim()
+            : null,
+
+        income_category: formData.incomeCategory,
+      }),
+    });
 
     const data = await response.json().catch(() => ({}));
 
@@ -316,9 +290,7 @@ function BasicInfoPage() {
     }
 
     if (!response.ok) {
-      throw new Error(
-        data.message || "تعذر حفظ البيانات الأساسية.",
-      );
+      throw new Error(data.message || "تعذر حفظ البيانات الأساسية.");
     }
 
     const updatedFamily = data.data?.family;
@@ -326,32 +298,20 @@ function BasicInfoPage() {
     if (updatedFamily) {
       setFormData((current) => ({
         ...current,
-        fullName:
-          updatedFamily.full_name ?? current.fullName,
-        nationalId:
-          updatedFamily.national_id ??
-          current.nationalId,
-        phone:
-          updatedFamily.phone ?? current.phone,
+        fullName: updatedFamily.full_name ?? current.fullName,
+        nationalId: updatedFamily.national_id ?? current.nationalId,
+        phone: updatedFamily.phone ?? current.phone,
       }));
 
-      const storedUser = JSON.parse(
-        localStorage.getItem("user") || "{}",
-      );
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
 
       localStorage.setItem(
         "user",
         JSON.stringify({
           ...storedUser,
-          full_name:
-            updatedFamily.full_name ??
-            storedUser.full_name,
-          national_id:
-            updatedFamily.national_id ??
-            storedUser.national_id,
-          phone:
-            updatedFamily.phone ??
-            storedUser.phone,
+          full_name: updatedFamily.full_name ?? storedUser.full_name,
+          national_id: updatedFamily.national_id ?? storedUser.national_id,
+          phone: updatedFamily.phone ?? storedUser.phone,
         }),
       );
     }
@@ -364,31 +324,21 @@ function BasicInfoPage() {
 
     const photoFormData = new FormData();
 
-    photoFormData.append(
-      "photo",
-      familyPhoto.file,
-    );
+    photoFormData.append("photo", familyPhoto.file);
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/family/photo`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: photoFormData,
-      },
-    );
+    const response = await fetch(`${API_BASE_URL}/api/family/photo`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: photoFormData,
+    });
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(
-        data.message ||
-          "تم حفظ البيانات، لكن تعذر رفع الصورة.",
-      );
+      throw new Error(data.message || "تم حفظ البيانات، لكن تعذر رفع الصورة.");
     }
 
-    const photoPath =
-      data.data?.personal_photo_path || "";
+    const photoPath = data.data?.personal_photo_path || "";
 
     if (photoPath) {
       setExistingPhotoPath(photoPath);
@@ -425,14 +375,9 @@ function BasicInfoPage() {
     try {
       await saveAllData();
 
-      setSuccessMessage(
-        "تم حفظ البيانات الأساسية بنجاح.",
-      );
+      setSuccessMessage("تم حفظ البيانات الأساسية بنجاح.");
     } catch (requestError) {
-      setError(
-        requestError.message ||
-          "حدث خطأ أثناء حفظ البيانات.",
-      );
+      setError(requestError.message || "حدث خطأ أثناء حفظ البيانات.");
     } finally {
       setSaving(false);
     }
@@ -454,10 +399,7 @@ function BasicInfoPage() {
 
       navigate("/family/wives");
     } catch (requestError) {
-      setError(
-        requestError.message ||
-          "حدث خطأ أثناء حفظ البيانات.",
-      );
+      setError(requestError.message || "حدث خطأ أثناء حفظ البيانات.");
     } finally {
       setSaving(false);
     }
@@ -465,9 +407,7 @@ function BasicInfoPage() {
 
   const displayedPhoto =
     familyPhoto?.preview ||
-    (existingPhotoPath
-      ? `${API_BASE_URL}${existingPhotoPath}`
-      : "");
+    (existingPhotoPath ? `${API_BASE_URL}${existingPhotoPath}` : "");
 
   if (loading) {
     return (
@@ -518,12 +458,22 @@ function BasicInfoPage() {
                 strokeWidth="1.8"
                 className="h-4 w-4"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6v6l4 2"
-                />
-                <circle cx="12" cy="12" r="9" />
+                {isSaved ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m5.25 12.75 4.5 4.5 9-10.5"
+                  />
+                ) : (
+                  <>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6l4 2"
+                    />
+                    <circle cx="12" cy="12" r="9" />
+                  </>
+                )}
               </svg>
 
               {saving
@@ -586,14 +536,10 @@ function BasicInfoPage() {
                   <button
                     type="button"
                     disabled={saving}
-                    onClick={() =>
-                      fileInputRef.current?.click()
-                    }
+                    onClick={() => fileInputRef.current?.click()}
                     className="rounded-lg bg-[#031632] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#020f23] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {existingPhotoPath
-                      ? "تغيير الصورة"
-                      : "رفع صورة شخصية"}
+                    {existingPhotoPath ? "تغيير الصورة" : "رفع صورة شخصية"}
                   </button>
 
                   {familyPhoto && (
@@ -604,8 +550,7 @@ function BasicInfoPage() {
                 </div>
 
                 <p className="mt-2 text-xs leading-6 text-slate-500">
-                  الصورة مطلوبة، بصيغة JPG أو PNG أو WebP،
-                  وبحد أقصى 2 ميجابايت.
+                  الصورة مطلوبة، بصيغة JPG أو PNG أو WebP، وبحد أقصى 2 ميجابايت.
                 </p>
 
                 <input
@@ -626,8 +571,7 @@ function BasicInfoPage() {
                 htmlFor="fullName"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                الاسم الرباعي{" "}
-                <span className="text-red-500">*</span>
+                الاسم الرباعي <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -648,8 +592,7 @@ function BasicInfoPage() {
                 htmlFor="nationalId"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                رقم الهوية{" "}
-                <span className="text-red-500">*</span>
+                رقم الهوية <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -676,8 +619,7 @@ function BasicInfoPage() {
                 htmlFor="dateOfBirth"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                تاريخ الميلاد{" "}
-                <span className="text-red-500">*</span>
+                تاريخ الميلاد <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -697,8 +639,7 @@ function BasicInfoPage() {
                 htmlFor="phone"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                رقم الجوال{" "}
-                <span className="text-red-500">*</span>
+                رقم الجوال <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -714,19 +655,17 @@ function BasicInfoPage() {
                 required
                 placeholder="05XXXXXXXX"
                 className={`h-12 w-full rounded-xl border px-4 text-left text-sm text-[#031632] outline-none transition placeholder:text-right placeholder:text-slate-400 disabled:opacity-60 ${
-                  formData.phone &&
-                  !/^05\d{8}$/.test(formData.phone)
+                  formData.phone && !/^05\d{8}$/.test(formData.phone)
                     ? "border-red-300 bg-[#fffafa] focus:border-red-400 focus:ring-4 focus:ring-red-100"
                     : "border-slate-200 bg-[#fafafe] focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
                 }`}
               />
 
-              {formData.phone &&
-                !/^05\d{8}$/.test(formData.phone) && (
-                  <p className="mt-2 text-xs font-medium text-red-500">
-                    يرجى إدخال رقم جوال صحيح.
-                  </p>
-                )}
+              {formData.phone && !/^05\d{8}$/.test(formData.phone) && (
+                <p className="mt-2 text-xs font-medium text-red-500">
+                  يرجى إدخال رقم جوال صحيح.
+                </p>
+              )}
             </div>
 
             <div>
@@ -762,8 +701,7 @@ function BasicInfoPage() {
                 htmlFor="maritalStatus"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                الحالة الاجتماعية{" "}
-                <span className="text-red-500">*</span>
+                الحالة الاجتماعية <span className="text-red-500">*</span>
               </label>
 
               <select
@@ -788,8 +726,7 @@ function BasicInfoPage() {
                 htmlFor="workStatus"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                حالة العمل{" "}
-                <span className="text-red-500">*</span>
+                حالة العمل <span className="text-red-500">*</span>
               </label>
 
               <select
@@ -814,8 +751,7 @@ function BasicInfoPage() {
                   htmlFor="jobSector"
                   className="mb-2 block text-sm font-semibold text-[#031632]"
                 >
-                  جهة العمل{" "}
-                  <span className="text-red-500">*</span>
+                  جهة العمل <span className="text-red-500">*</span>
                 </label>
 
                 <select
@@ -827,21 +763,13 @@ function BasicInfoPage() {
                   required
                   className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
                 >
-                  <option value="">
-                    اختر جهة العمل
-                  </option>
+                  <option value="">اختر جهة العمل</option>
 
-                  <option value="government">
-                    حكومي
-                  </option>
+                  <option value="government">حكومي</option>
 
-                  <option value="private">
-                    قطاع خاص
-                  </option>
+                  <option value="private">قطاع خاص</option>
 
-                  <option value="other">
-                    أخرى
-                  </option>
+                  <option value="other">أخرى</option>
                 </select>
 
                 <p className="mt-2 text-xs leading-6 text-slate-500">
@@ -857,8 +785,7 @@ function BasicInfoPage() {
                     htmlFor="otherJobSector"
                     className="mb-2 block text-sm font-semibold text-[#031632]"
                   >
-                    تحديد جهة العمل{" "}
-                    <span className="text-red-500">*</span>
+                    تحديد جهة العمل <span className="text-red-500">*</span>
                   </label>
 
                   <input
@@ -884,8 +811,7 @@ function BasicInfoPage() {
                 htmlFor="incomeCategory"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
-                فئة الدخل{" "}
-                <span className="text-red-500">*</span>
+                فئة الدخل <span className="text-red-500">*</span>
               </label>
 
               <select
@@ -899,17 +825,11 @@ function BasicInfoPage() {
               >
                 <option value="">اختر...</option>
 
-                <option value="0-1000">
-                  من 0 إلى 1000
-                </option>
+                <option value="0-1000">من 0 إلى 1000</option>
 
-                <option value="1000-3000">
-                  من 1000 إلى 3000
-                </option>
+                <option value="1000-3000">من 1000 إلى 3000</option>
 
-                <option value="3000+">
-                  أكثر من 3000
-                </option>
+                <option value="3000+">أكثر من 3000</option>
               </select>
             </div>
           </div>
@@ -922,9 +842,7 @@ function BasicInfoPage() {
                 disabled={saving}
                 className="h-11 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving
-                  ? "جاري الحفظ..."
-                  : "حفظ كمسودة"}
+                {saving ? "جاري الحفظ..." : "حفظ كمسودة"}
               </button>
 
               <button
@@ -932,13 +850,9 @@ function BasicInfoPage() {
                 disabled={saving}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving
-                  ? "جاري الحفظ..."
-                  : "حفظ والمتابعة"}
+                {saving ? "جاري الحفظ..." : "حفظ والمتابعة"}
 
-                {!saving && (
-                  <span aria-hidden="true">←</span>
-                )}
+                {!saving && <span aria-hidden="true">←</span>}
               </button>
             </div>
           </div>
