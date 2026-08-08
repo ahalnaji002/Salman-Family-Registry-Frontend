@@ -34,6 +34,19 @@ function RegisterPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    const fullName = form.fullName.trim();
+    const nameParts = fullName.split(/\s+/).filter(Boolean);
+
+    if (!fullName) {
+      setErrorMessage("الاسم الرباعي مطلوب.");
+      return;
+    }
+
+    if (nameParts.length < 4) {
+      setErrorMessage("اسم رب الأسرة يجب أن يتكون من 4 مقاطع على الأقل.");
+      return;
+    }
+
     if (form.password.length < 8) {
       setErrorMessage("كلمة المرور يجب أن تتكون من 8 خانات على الأقل.");
       return;
@@ -56,7 +69,7 @@ function RegisterPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            full_name: form.fullName.trim(),
+            full_name: fullName,
             national_id: form.nationalId.trim(),
             phone: form.phone.trim(),
             password: form.password,

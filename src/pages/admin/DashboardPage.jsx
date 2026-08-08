@@ -1,29 +1,8 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import AddSupervisorModal from "./AddSupervisorModal";
 import EditSupervisorModal from "./EditSupervisorModal";
-const stats = [
-  {
-    title: "إجمالي الأسر المسجلة",
-    value: "142",
-    note: "+12 هذا الشهر",
-  },
-  {
-    title: "إجمالي أفراد العائلة",
-    value: "856",
-    note: "+45 هذا الشهر",
-  },
-  {
-    title: "الاستمارات المكتملة",
-    value: "120",
-    note: "84% نسبة الإنجاز",
-  },
-  {
-    title: "الاستمارات غير المكتملة",
-    value: "22",
-    note: "لم يتم استكمال البيانات",
-  },
-];
+const API_BASE_URL = "http://localhost:5000";
 
 const initialSupervisors = [
   {
@@ -44,10 +23,158 @@ const initialSupervisors = [
 
 function DashboardPage() {
   const navigate = useNavigate();
+
+  const [dashboardStats, setDashboardStats] = useState({
+    totalFamilies: 0,
+    submittedFamilies: 0,
+    draftFamilies: 0,
+    editingEnabledFamilies: 0,
+  });
+
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
+
   const [supervisors, setSupervisors] = useState(initialSupervisors);
   const [isAddSupervisorOpen, setIsAddSupervisorOpen] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
   const [isEditSupervisorOpen, setIsEditSupervisorOpen] = useState(false);
+
+
+  const getAdminToken = () =>
+    localStorage.getItem("adminToken") ||
+    sessionStorage.getItem("adminToken");
+
+  const clearAdminSession = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+    sessionStorage.removeItem("adminToken");
+    sessionStorage.removeItem("adminUser");
+  };
+
+  useEffect(() => {
+    const loadDashboardStats = async () => {
+      const token = getAdminToken();
+
+      if (!token) {
+        clearAdminSession();
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+
+      setStatsLoading(true);
+      setStatsError("");
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/admin/dashboard/stats`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          },
+        );
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401 || response.status === 403) {
+          clearAdminSession();
+          navigate("/admin/login", { replace: true });
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "تعذر تحميل إحصائيات لوحة التحكم.",
+          );
+        }
+
+        const apiStats =
+          data.data?.stats ||
+          data.data?.totals ||
+          data.data ||
+          data.stats ||
+          data;
+
+        setDashboardStats({
+          totalFamilies: Number(
+            apiStats.total_families ??
+              apiStats.totalFamilies ??
+              apiStats.total ??
+              0,
+          ),
+          submittedFamilies: Number(
+            apiStats.submitted_families ??
+              apiStats.submittedFamilies ??
+              apiStats.submitted ??
+              0,
+          ),
+          draftFamilies: Number(
+            apiStats.draft_families ??
+              apiStats.draftFamilies ??
+              apiStats.draft ??
+              0,
+          ),
+          editingEnabledFamilies: Number(
+            apiStats.editing_enabled_families ??
+              apiStats.editingEnabledFamilies ??
+              apiStats.editing_enabled ??
+              0,
+          ),
+        });
+      } catch (requestError) {
+        if (requestError instanceof TypeError) {
+          setStatsError(
+            "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
+          );
+        } else {
+          setStatsError(
+            requestError.message ||
+              "حدث خطأ أثناء تحميل إحصائيات لوحة التحكم.",
+          );
+        }
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadDashboardStats();
+  }, [navigate]);
+
+  const completionPercentage =
+    dashboardStats.totalFamilies > 0
+      ? Math.round(
+          (dashboardStats.submittedFamilies /
+            dashboardStats.totalFamilies) *
+            100,
+        )
+      : 0;
+
+  const stats = useMemo(
+    () => [
+      {
+        title: "إجمالي الأسر المسجلة",
+        value: dashboardStats.totalFamilies,
+        note: "جميع الأسر المسجلة",
+      },
+      {
+        title: "الاستمارات المكتملة",
+        value: dashboardStats.submittedFamilies,
+        note: `${completionPercentage}% نسبة الإنجاز`,
+      },
+      {
+        title: "الاستمارات غير المكتملة",
+        value: dashboardStats.draftFamilies,
+        note: "ما زالت قيد الاستكمال",
+      },
+      {
+        title: "الأسر المتاح لها التعديل",
+        value: dashboardStats.editingEnabledFamilies,
+        note: "التعديل مفتوح حاليًا",
+      },
+    ],
+    [dashboardStats, completionPercentage],
+  );
 
   const handleAddSupervisor = (newSupervisor) => {
     setSupervisors((currentSupervisors) => [
@@ -78,6 +205,15 @@ function DashboardPage() {
 
   return (
     <section className="space-y-8">
+      {statsError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-7 text-red-700"
+        >
+          {statsError}
+        </div>
+      )}
+
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <article
@@ -87,7 +223,9 @@ function DashboardPage() {
             <p className="text-lg font-bold text-[#111c2c]">{stat.title}</p>
 
             <div className="mt-5 flex items-end justify-between gap-3">
-              <p className="text-3xl font-bold text-[#031632]">{stat.value}</p>
+              <p className="text-3xl font-bold text-[#031632]">
+                {statsLoading ? "..." : stat.value}
+              </p>
 
               <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-medium text-[#34446b]">
                 {stat.note}

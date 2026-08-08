@@ -1,6 +1,15 @@
-import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router";
+import {
+  useEffect,
+  useState,
+} from "react";
+import {
+  NavLink,
+  Outlet,
+  useNavigate,
+} from "react-router";
 import logo from "../assets/images/salman-family-logo.png";
+
+const API_BASE_URL = "http://localhost:5000";
 
 const navigationItems = [
   {
@@ -16,15 +25,33 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3 11.5 12 4l9 7.5"
+        <rect
+          x="3"
+          y="3"
+          width="7"
+          height="7"
+          rx="1.5"
         />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M5.5 10.5V20h13v-9.5M9.5 20v-5.5h5V20"
+        <rect
+          x="14"
+          y="3"
+          width="7"
+          height="7"
+          rx="1.5"
+        />
+        <rect
+          x="3"
+          y="14"
+          width="7"
+          height="7"
+          rx="1.5"
+        />
+        <rect
+          x="14"
+          y="14"
+          width="7"
+          height="7"
+          rx="1.5"
         />
       </svg>
     ),
@@ -41,13 +68,17 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
+        <circle
+          cx="9.5"
+          cy="7.5"
+          r="3.5"
+        />
+
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"
+          d="M3 20v-1.5a6.5 6.5 0 0 1 13 0V20"
         />
-
-        <circle cx="9.5" cy="7.5" r="3.5" />
 
         <path
           strokeLinecap="round"
@@ -69,7 +100,11 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 3v12"
+        />
 
         <path
           strokeLinecap="round"
@@ -77,7 +112,11 @@ const navigationItems = [
           d="m7.5 10.5 4.5 4.5 4.5-4.5"
         />
 
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 20h14" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M5 20h14"
+        />
       </svg>
     ),
   },
@@ -93,7 +132,11 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
-        <circle cx="12" cy="12" r="3" />
+        <circle
+          cx="12"
+          cy="12"
+          r="3"
+        />
 
         <path
           strokeLinecap="round"
@@ -106,37 +149,160 @@ const navigationItems = [
 ];
 
 function AdminLayout() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [isSidebarOpen, setIsSidebarOpen] =
+    useState(false);
+
+  const [checkingAuth, setCheckingAuth] =
+    useState(true);
+
+  const [adminUser, setAdminUser] =
+    useState(null);
+
+  const getAdminToken = () =>
+    localStorage.getItem("adminToken") ||
+    sessionStorage.getItem("adminToken");
+
+  const clearAdminSession = () => {
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+
+    sessionStorage.removeItem(
+      "adminToken",
+    );
+    sessionStorage.removeItem(
+      "adminUser",
+    );
+  };
+
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      const token = getAdminToken();
+
+      if (!token) {
+        clearAdminSession();
+
+        navigate("/admin/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/auth/me`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          },
+        );
+
+        const data = await response
+          .json()
+          .catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "انتهت جلسة تسجيل الدخول.",
+          );
+        }
+
+        const user = data.data?.user;
+
+        if (!user || user.role !== "admin") {
+          throw new Error(
+            "ليس لديك صلاحية الدخول إلى لوحة الإدارة.",
+          );
+        }
+
+        setAdminUser(user);
+
+        const storage =
+          localStorage.getItem("adminToken")
+            ? localStorage
+            : sessionStorage;
+
+        storage.setItem(
+          "adminUser",
+          JSON.stringify(user),
+        );
+      } catch {
+        clearAdminSession();
+
+        navigate("/admin/login", {
+          replace: true,
+        });
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    verifyAdmin();
+  }, [navigate]);
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
 
   const handleLogout = () => {
-    // لاحقًا عند ربط الـ Backend:
-    // localStorage.removeItem("adminToken");
-    // sessionStorage.removeItem("adminToken");
-    // POST /api/admin/auth/logout
-
+    clearAdminSession();
     closeSidebar();
-    navigate("/admin/login", { replace: true });
+
+    navigate("/admin/login", {
+      replace: true,
+    });
   };
 
+  const adminInitial =
+    adminUser?.full_name
+      ?.trim()
+      ?.charAt(0) || "م";
+
+  if (checkingAuth) {
+    return (
+      <div
+        dir="rtl"
+        className="flex min-h-screen items-center justify-center bg-[#f8f9ff]"
+      >
+        <div className="text-center">
+          <span className="mx-auto block h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-[#031632]" />
+
+          <p className="mt-4 text-sm font-semibold text-slate-500">
+            جاري التحقق من صلاحية الدخول...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!adminUser) {
+    return null;
+  }
+
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f5f7fc] text-[#111c2c]">
+    <div
+      dir="rtl"
+      className="min-h-screen bg-[#f8f9ff]"
+    >
       {isSidebarOpen && (
         <button
           type="button"
           aria-label="إغلاق القائمة"
           onClick={closeSidebar}
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
         />
       )}
 
       <aside
         className={`fixed right-0 top-0 z-50 flex h-screen w-64 flex-col border-l border-white/10 bg-[#031632] text-white shadow-xl transition-transform duration-300 ${
-          isSidebarOpen ? "translate-x-0" : "translate-x-full"
+          isSidebarOpen
+            ? "translate-x-0"
+            : "translate-x-full"
         } md:translate-x-0`}
       >
         <div className="flex items-center gap-3 border-b border-white/10 px-4 py-4">
@@ -147,8 +313,13 @@ function AdminLayout() {
           />
 
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold">عائلة سلمان</h1>
-            <p className="mt-1 text-sm text-slate-300">سجل العائلة</p>
+            <h1 className="truncate text-lg font-bold">
+              عائلة سلمان
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-300">
+              سجل العائلة
+            </p>
           </div>
 
           <button
@@ -168,7 +339,9 @@ function AdminLayout() {
               to={item.path}
               end={item.end}
               onClick={closeSidebar}
-              className={({ isActive }) =>
+              className={({
+                isActive,
+              }) =>
                 `flex items-center gap-3 rounded-xl px-4 py-3.5 text-base font-semibold transition ${
                   isActive
                     ? "bg-[#fffdf7] text-[#c89200] shadow-sm"
@@ -229,7 +402,9 @@ function AdminLayout() {
               <button
                 type="button"
                 aria-label="فتح القائمة"
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={() =>
+                  setIsSidebarOpen(true)
+                }
                 className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-xl text-[#031632] hover:bg-slate-100 md:hidden"
               >
                 ☰
@@ -240,21 +415,25 @@ function AdminLayout() {
                   عائلة سلمان
                 </h2>
 
-                <p className="text-sm text-slate-500">لوحة التحكم الإدارية</p>
+                <p className="text-sm text-slate-500">
+                  لوحة التحكم الإدارية
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="hidden text-left sm:block">
                 <p className="text-sm font-semibold text-[#031632]">
-                  مشرف النظام
+                  {adminUser.full_name}
                 </p>
 
-                <p className="text-xs text-slate-500">مدير النظام</p>
+                <p className="text-xs text-slate-500">
+                  مدير النظام
+                </p>
               </div>
 
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e7eeff] font-bold text-[#031632]">
-                م
+                {adminInitial}
               </div>
             </div>
           </div>
@@ -268,9 +447,13 @@ function AdminLayout() {
 
         <footer className="border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
           <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center justify-between gap-3 md:flex-row">
-            <p>© 2026 جميع الحقوق محفوظة لعائلة سلمان</p>
+            <p>
+              © 2026 جميع الحقوق محفوظة لعائلة سلمان
+            </p>
 
-            <p className="md:mr-auto">تصميم ومعالجة / أحمد مسعود</p>
+            <p className="md:mr-auto">
+              تصميم ومعالجة / أحمد مسعود
+            </p>
           </div>
         </footer>
       </div>
