@@ -155,7 +155,15 @@ function ExportPage() {
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [familiesCount, setFamiliesCount] = useState(0);
   const [membersCount, setMembersCount] = useState(0);
-  const [fileSize, setFileSize] = useState("—");
+  const [fileSize, setFileSize] = useState("يظهر بعد التصدير");
+  const [lastExport, setLastExport] = useState(() => {
+    try {
+      const saved = localStorage.getItem("adminLastExport");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const resetFilters = () => {
     setRegion("الكل");
@@ -240,12 +248,12 @@ function ExportPage() {
         setFamiliesCount(0);
         setMembersCount(0);
         setIsLoadingStats(false);
-        setFileSize("—");
+        setFileSize("يظهر بعد التصدير");
         return;
       }
 
       setIsLoadingStats(true);
-      setFileSize("—");
+      setFileSize("يظهر بعد التصدير");
 
       try {
         const queryString = buildFiltersQuery().toString();
@@ -384,6 +392,17 @@ function ExportPage() {
           .toISOString()
           .slice(0, 10)}.xlsx`;
 
+      const exportInfo = {
+        fileName,
+        exportedAt: new Date().toISOString(),
+        familiesCount,
+        membersCount,
+        fileSize: formatFileSize(blob.size),
+      };
+
+      setLastExport(exportInfo);
+      localStorage.setItem("adminLastExport", JSON.stringify(exportInfo));
+
       const downloadUrl = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
 
@@ -472,20 +491,37 @@ function ExportPage() {
               </span>
 
               <div>
-                <p
-                  dir="ltr"
-                  className="font-bold text-[#111c2c]"
-                >
-                  family-registry-export.xlsx
-                </p>
+                {lastExport ? (
+                  <>
+                    <p
+                      dir="ltr"
+                      className="font-bold text-[#111c2c]"
+                    >
+                      {lastExport.fileName}
+                    </p>
 
-                <p className="mt-2 text-sm text-slate-500">
-                  12 أكتوبر 2023 — 14:30
-                </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {new Intl.DateTimeFormat("ar-EG", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }).format(new Date(lastExport.exportedAt))}
+                    </p>
 
-                <span className="mt-3 inline-flex rounded-full bg-[#dbe6ff] px-3 py-1 text-xs font-medium text-[#031632]">
-                  تم تصدير 1,245 أسرة
-                </span>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="inline-flex rounded-full bg-[#dbe6ff] px-3 py-1 text-xs font-medium text-[#031632]">
+                        تم تصدير {Number(lastExport.familiesCount || 0).toLocaleString("en-US")} أسرة
+                      </span>
+
+                      <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        {lastExport.fileSize}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    لا توجد عملية تصدير بعد.
+                  </p>
+                )}
               </div>
             </div>
           </article>
@@ -607,15 +643,9 @@ function ExportPage() {
         : ""
     }`}
   >
-    <p
-      className={`text-3xl font-bold ${
-        index === 2
-          ? "text-amber-800"
-          : "text-[#031632]"
-      }`}
-    >
-      {stat.value}
-    </p>
+    <p className="text-3xl font-bold text-[#031632]">
+  {stat.value}
+</p>
 
     <p className="mt-2 text-sm text-slate-600">
       {stat.label}

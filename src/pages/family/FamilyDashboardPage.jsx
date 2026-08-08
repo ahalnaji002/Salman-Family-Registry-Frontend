@@ -240,6 +240,12 @@ function FamilyDashboardPage() {
   const statusLabel =
     formStatusLabels[formStatus] || formStatus;
 
+  const registrationDeadline =
+    editingStatus?.registration_closes_at || null;
+
+  const formattedRegistrationDeadline =
+    formatDate(registrationDeadline);
+
   const sections = useMemo(
     () => [
       {
@@ -553,7 +559,7 @@ function FamilyDashboardPage() {
                 </span>
 
                 <span>
-                  الموعد النهائي: 15 أغسطس 2026
+                  الموعد النهائي: {formattedRegistrationDeadline}
                 </span>
               </div>
             </div>
@@ -618,8 +624,9 @@ function FamilyDashboardPage() {
               </h3>
 
               <p className="mt-1 text-sm leading-7 text-slate-600">
-                يرجى استكمال وتأكيد جميع بيانات الاستمارة قبل تاريخ 15 أغسطس
-                2026. لن تتمكن من إجراء أي تعديلات بعد هذا التاريخ.
+                يرجى استكمال وتأكيد جميع بيانات الاستمارة قبل تاريخ{" "}
+                {formattedRegistrationDeadline}. لن تتمكن من إجراء أي تعديلات
+                بعد هذا التاريخ.
               </p>
             </div>
           </div>
