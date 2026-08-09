@@ -31,6 +31,8 @@ function ChildrenPage() {
 
   const [isSaved, setIsSaved] = useState(false);
 
+  const [modalError, setModalError] = useState("");
+
   const token =
     localStorage.getItem("token") || sessionStorage.getItem("token");
 
@@ -131,10 +133,13 @@ function ChildrenPage() {
       return;
     }
 
+    setModalError("");
+
     setIsModalOpen(false);
     setEditingChildId(null);
     setChildForm(initialChildForm);
     setErrors({});
+    setModalError("");
   };
 
   const handleChildFormChange = (event) => {
@@ -222,6 +227,8 @@ function ChildrenPage() {
 
   const handleSaveChild = async (event) => {
     event.preventDefault();
+    setModalError("");
+    setSuccessMessage("");
 
     if (!validateChildForm() || savingChild) {
       return;
@@ -292,8 +299,8 @@ function ChildrenPage() {
           : "تمت إضافة الابن أو الابنة بنجاح.",
       );
     } catch (requestError) {
-      setPageError(
-        requestError.message || "حدث خطأ أثناء حفظ بيانات الابن أو الابنة.",
+      setModalError(
+        requestError.message || "حدث خطأ أثناء حفظ بيانات الابن/الابنة.",
       );
     } finally {
       setSavingChild(false);
@@ -316,6 +323,7 @@ function ChildrenPage() {
     setPageError("");
     setSuccessMessage("");
 
+    setModalError("");
     setIsModalOpen(true);
   };
 
@@ -929,6 +937,12 @@ function ChildrenPage() {
                   </div>
                 )}
               </div>
+
+              {modalError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {modalError}
+                </div>
+              )}
 
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
                 <button

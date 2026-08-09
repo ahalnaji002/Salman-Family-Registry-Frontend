@@ -40,6 +40,8 @@ function SpecialCasesPage() {
 
   const [isSaved, setIsSaved] = useState(false);
 
+  const [modalError, setModalError] = useState("");
+
   const token =
     localStorage.getItem("token") || sessionStorage.getItem("token");
 
@@ -275,6 +277,7 @@ function SpecialCasesPage() {
     setErrors({});
     setPageError("");
     setSuccessMessage("");
+    setModalError("");
     setIsModalOpen(true);
   };
 
@@ -287,6 +290,7 @@ function SpecialCasesPage() {
     setEditingCaseId(null);
     setSpecialCaseForm(initialSpecialCaseForm);
     setErrors({});
+    setModalError("");
   };
 
   const handleCaseTypeChange = (event) => {
@@ -304,6 +308,7 @@ function SpecialCasesPage() {
 
     setErrors({});
     setPageError("");
+    setModalError("");
     setSuccessMessage("");
     setIsSaved(false);
   };
@@ -432,6 +437,8 @@ function SpecialCasesPage() {
 
   const handleSaveSpecialCase = async (event) => {
     event.preventDefault();
+    setModalError("");
+    setSuccessMessage("");
 
     if (!validateSpecialCaseForm() || savingCase) {
       return;
@@ -501,7 +508,7 @@ function SpecialCasesPage() {
           : "تمت إضافة الحالة الخاصة بنجاح.",
       );
     } catch (requestError) {
-      setPageError(requestError.message || "حدث خطأ أثناء حفظ الحالة الخاصة.");
+      setModalError(requestError.message || "حدث خطأ أثناء حفظ الحالة الخاصة.");
     } finally {
       setSavingCase(false);
     }
@@ -534,6 +541,7 @@ function SpecialCasesPage() {
 
     setErrors({});
     setPageError("");
+    setModalError("");
     setSuccessMessage("");
     setIsModalOpen(true);
   };
@@ -1210,6 +1218,12 @@ function SpecialCasesPage() {
                   </div>
                 )}
               </div>
+
+              {modalError && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {modalError}
+                </div>
+              )}
 
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
                 <button

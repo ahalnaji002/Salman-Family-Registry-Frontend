@@ -58,9 +58,37 @@ function FamilyLayout() {
   const token =
     localStorage.getItem("token") || sessionStorage.getItem("token");
 
+  const storedUserRaw = localStorage.getItem("user");
+
+  let storedUser = null;
+
+  try {
+    storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+  } catch {
+    storedUser = null;
+  }
+
+  const isFamilyHead = Array.isArray(storedUser?.roles)
+    ? storedUser.roles.includes("family_head")
+    : storedUser?.role === "family_head";
+
+  const isAdmin = Array.isArray(storedUser?.roles)
+    ? storedUser.roles.includes("admin")
+    : storedUser?.role === "admin";
+
   const loadLayoutData = useCallback(async () => {
     if (!token) {
       navigate("/login", { replace: true });
+      return;
+    }
+
+    if (!isFamilyHead) {
+      if (isAdmin) {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/login", { replace: true });
+      }
+
       return;
     }
 
@@ -89,6 +117,14 @@ function FamilyLayout() {
         return;
       }
 
+      if (familyResponse.status === 403 || completionResponse.status === 403) {
+        if (isAdmin) {
+          navigate("/admin", { replace: true });
+        }
+
+        return;
+      }
+
       const familyResult = await familyResponse.json().catch(() => ({}));
 
       const completionResult = await completionResponse
@@ -105,7 +141,7 @@ function FamilyLayout() {
     } catch (error) {
       console.error("Family layout loading error:", error);
     }
-  }, [navigate, token]);
+  }, [navigate, token, isFamilyHead, isAdmin]);
 
   useEffect(() => {
     loadLayoutData();

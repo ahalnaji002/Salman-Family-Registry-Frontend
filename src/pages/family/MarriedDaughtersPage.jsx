@@ -31,6 +31,8 @@ function MarriedDaughtersPage() {
 
   const [isSaved, setIsSaved] = useState(false);
 
+  const [modalError, setModalError] = useState("");
+
   const token =
     localStorage.getItem("token") || sessionStorage.getItem("token");
 
@@ -118,6 +120,7 @@ function MarriedDaughtersPage() {
     setDaughterForm(initialDaughterForm);
     setErrors({});
     setPageError("");
+    setModalError("");
     setSuccessMessage("");
     setIsModalOpen(true);
   };
@@ -131,6 +134,7 @@ function MarriedDaughtersPage() {
     setEditingDaughterId(null);
     setDaughterForm(initialDaughterForm);
     setErrors({});
+    setModalError("");
   };
 
   const handleDaughterFormChange = (event) => {
@@ -211,6 +215,8 @@ function MarriedDaughtersPage() {
 
   const handleSaveDaughter = async (event) => {
     event.preventDefault();
+    setModalError("");
+    setSuccessMessage("");
 
     if (!validateDaughterForm() || savingDaughter) {
       return;
@@ -278,7 +284,7 @@ function MarriedDaughtersPage() {
           : "تمت إضافة البنت المتزوجة بنجاح.",
       );
     } catch (requestError) {
-      setPageError(
+      setModalError(
         requestError.message || "حدث خطأ أثناء حفظ بيانات البنت المتزوجة.",
       );
     } finally {
@@ -299,6 +305,7 @@ function MarriedDaughtersPage() {
 
     setErrors({});
     setPageError("");
+    setModalError("");
     setSuccessMessage("");
     setIsModalOpen(true);
   };
@@ -508,18 +515,50 @@ function MarriedDaughtersPage() {
                         <button
                           type="button"
                           onClick={() => handleEditDaughter(daughter)}
-                          className="flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
+                          aria-label="تعديل بيانات البنت المتزوجة"
                         >
-                          تعديل
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            className="h-4 w-4"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
+                            />
+                          </svg>
                         </button>
 
                         <button
                           type="button"
                           disabled={deletingDaughterId === daughter.id}
                           onClick={() => handleDeleteDaughter(daughter.id)}
-                          className="flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-500 transition hover:bg-red-50 disabled:opacity-50"
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label="حذف بيانات البنت المتزوجة"
                         >
-                          حذف
+                          {deletingDaughterId === daughter.id ? (
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              className="h-4 w-4"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
+                              />
+                            </svg>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -759,6 +798,12 @@ function MarriedDaughtersPage() {
                   )}
                 </div>
               </div>
+
+              {modalError && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {modalError}
+                </div>
+              )}
 
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
                 <button

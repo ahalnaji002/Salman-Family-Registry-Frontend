@@ -36,6 +36,8 @@ function WivesPage() {
 
   const [isSaved, setIsSaved] = useState(false);
 
+  const [modalError, setModalError] = useState("");
+
   const token =
     localStorage.getItem("token") || sessionStorage.getItem("token");
 
@@ -144,6 +146,7 @@ function WivesPage() {
   }, []);
 
   const handleAddWife = () => {
+    setModalError("");
     setEditingWifeId(null);
 
     setWifeForm(initialWifeForm);
@@ -156,6 +159,7 @@ function WivesPage() {
   };
 
   const handleCloseModal = () => {
+    setModalError("");
     if (savingWife) {
       return;
     }
@@ -270,6 +274,8 @@ function WivesPage() {
   const handleSaveWife = async (event) => {
     event.preventDefault();
 
+    setModalError("");
+
     if (!validateWifeForm() || savingWife) {
       return;
     }
@@ -337,13 +343,14 @@ function WivesPage() {
 
       window.dispatchEvent(new Event("family-data-updated"));
     } catch (requestError) {
-      setPageError(requestError.message || "حدث خطأ أثناء حفظ بيانات الزوجة.");
+      setModalError(requestError.message || "حدث خطأ أثناء حفظ بيانات الزوجة.");
     } finally {
       setSavingWife(false);
     }
   };
 
   const handleEditWife = (wife) => {
+    setModalError("");
     setEditingWifeId(wife.id);
 
     setWifeForm({
@@ -979,6 +986,12 @@ function WivesPage() {
                   </div>
                 )}
               </div>
+
+              {modalError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {modalError}
+                </div>
+              )}
 
               <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
                 <button
