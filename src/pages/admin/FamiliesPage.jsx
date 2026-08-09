@@ -147,14 +147,12 @@ function FamiliesPage() {
   const [familyToEdit, setFamilyToEdit] = useState(null);
 
   const getAdminToken = () =>
-    localStorage.getItem("adminToken") ||
-    sessionStorage.getItem("adminToken");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const clearAdminSession = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-    sessionStorage.removeItem("adminToken");
-    sessionStorage.removeItem("adminUser");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   const apiRequest = async (path, options = {}) => {
@@ -162,7 +160,7 @@ function FamiliesPage() {
 
     if (!token) {
       clearAdminSession();
-      window.location.href = "/admin/login";
+      window.location.href = "/login";
       throw new Error("انتهت جلسة تسجيل الدخول.");
     }
 
@@ -180,16 +178,12 @@ function FamiliesPage() {
 
     if (response.status === 401) {
       clearAdminSession();
-      window.location.href = "/admin/login";
-      throw new Error(
-        data.message || "انتهت جلسة تسجيل الدخول.",
-      );
+      window.location.href = "/login";
+      throw new Error(data.message || "انتهت جلسة تسجيل الدخول.");
     }
 
     if (response.status === 403) {
-      throw new Error(
-        data.message || "ليس لديك صلاحية لتنفيذ هذا الإجراء.",
-      );
+      throw new Error(data.message || "ليس لديك صلاحية لتنفيذ هذا الإجراء.");
     }
 
     if (!response.ok) {
@@ -204,10 +198,14 @@ function FamiliesPage() {
     headName: family.full_name || "",
     nationalId: String(family.national_id || ""),
     phone: family.phone || "",
-    region: "—",
-    membersCount: "—",
-    status:
-      family.form_status === "submitted" ? "مكتملة" : "غير مكتملة",
+    region:
+      previousAreaLabels[family.previous_area] || family.previous_area || "—",
+
+    membersCount:
+      family.members_count !== undefined && family.members_count !== null
+        ? Number(family.members_count)
+        : "—",
+    status: family.form_status === "submitted" ? "مكتملة" : "غير مكتملة",
     formStatus: family.form_status || "draft",
     registeredAt: family.created_at
       ? String(family.created_at).slice(0, 10)
@@ -234,12 +232,8 @@ function FamiliesPage() {
       phone: family.phone || "",
       region: previousAreaLabels[housing?.previous_area] || "—",
       membersCount:
-        1 +
-        wives.length +
-        children.length +
-        marriedDaughters.length,
-      status:
-        family.form_status === "submitted" ? "مكتملة" : "غير مكتملة",
+        1 + wives.length + children.length + marriedDaughters.length,
+      status: family.form_status === "submitted" ? "مكتملة" : "غير مكتملة",
       formStatus: family.form_status || "draft",
       registeredAt: family.created_at
         ? String(family.created_at).slice(0, 10)
@@ -262,9 +256,7 @@ function FamiliesPage() {
       maritalStatusValue: family.marital_status || "",
       incomeLevel: family.income_category || "",
       workStatus:
-        workStatusLabels[family.work_status] ||
-        family.work_status ||
-        "",
+        workStatusLabels[family.work_status] || family.work_status || "",
       workStatusValue: family.work_status || "",
       jobType:
         jobTypeLabels[family.job_type] ||
@@ -335,16 +327,12 @@ function FamiliesPage() {
       })),
       summary: {
         wivesCount: Number(summary.wives_count ?? wives.length),
-        childrenCount: Number(
-          summary.children_count ?? children.length,
-        ),
+        childrenCount: Number(summary.children_count ?? children.length),
         marriedDaughtersCount: Number(
-          summary.married_daughters_count ??
-            marriedDaughters.length,
+          summary.married_daughters_count ?? marriedDaughters.length,
         ),
         specialCasesCount: Number(
-          summary.special_cases_count ??
-            specialCases.length,
+          summary.special_cases_count ?? specialCases.length,
         ),
       },
     };
@@ -364,9 +352,7 @@ function FamiliesPage() {
     setDetailsLoading(true);
 
     try {
-      const data = await apiRequest(
-        `/api/admin/families/${familyId}`,
-      );
+      const data = await apiRequest(`/api/admin/families/${familyId}`);
 
       const normalized = normalizeFamilyDetails(data.data);
 
@@ -389,10 +375,7 @@ function FamiliesPage() {
         ),
       );
     } catch (error) {
-      setErrorMessage(
-        error.message ||
-          "حدث خطأ أثناء جلب تفاصيل الأسرة.",
-      );
+      setErrorMessage(error.message || "حدث خطأ أثناء جلب تفاصيل الأسرة.");
     } finally {
       setDetailsLoading(false);
     }
@@ -421,14 +404,10 @@ function FamiliesPage() {
         query.set("status", "draft");
       }
 
-      const data = await apiRequest(
-        `/api/admin/families?${query.toString()}`,
-      );
+      const data = await apiRequest(`/api/admin/families?${query.toString()}`);
 
       const apiFamilies = data.data?.families || [];
-      const normalizedFamilies = apiFamilies.map(
-        normalizeListFamily,
-      );
+      const normalizedFamilies = apiFamilies.map(normalizeListFamily);
 
       setFamilyRecords(normalizedFamilies);
 
@@ -449,7 +428,7 @@ function FamiliesPage() {
 
       const nextSelectedId = selectedExists
         ? preserveSelectedId
-        : normalizedFamilies[0]?.id ?? null;
+        : (normalizedFamilies[0]?.id ?? null);
 
       setSelectedFamilyId(nextSelectedId);
 
@@ -462,10 +441,7 @@ function FamiliesPage() {
       setFamilyRecords([]);
       setSelectedFamily(null);
 
-      setErrorMessage(
-        error.message ||
-          "حدث خطأ أثناء جلب الأسر المسجلة.",
-      );
+      setErrorMessage(error.message || "حدث خطأ أثناء جلب الأسر المسجلة.");
     } finally {
       setLoading(false);
     }
@@ -488,9 +464,7 @@ function FamiliesPage() {
       return familyRecords;
     }
 
-    return familyRecords.filter(
-      (family) => family.region === regionFilter,
-    );
+    return familyRecords.filter((family) => family.region === regionFilter);
   }, [familyRecords, regionFilter]);
 
   const handleSelectFamily = async (familyId) => {
@@ -503,8 +477,7 @@ function FamiliesPage() {
     clearMessages();
     setActionFamilyId(family.id);
 
-    const nextOverride =
-      family.editStatus === "open" ? false : true;
+    const nextOverride = family.editStatus === "open" ? false : true;
 
     try {
       const data = await apiRequest(
@@ -518,12 +491,9 @@ function FamiliesPage() {
       );
 
       const returnedFamily = data.data?.family || {};
-      const returnedStatus =
-        returnedFamily.form_status || family.formStatus;
+      const returnedStatus = returnedFamily.form_status || family.formStatus;
 
-      const nextEditStatus = nextOverride
-        ? "open"
-        : "closed";
+      const nextEditStatus = nextOverride ? "open" : "closed";
 
       setFamilyRecords((currentFamilies) =>
         currentFamilies.map((currentFamily) =>
@@ -531,9 +501,7 @@ function FamiliesPage() {
             ? {
                 ...currentFamily,
                 status:
-                  returnedStatus === "submitted"
-                    ? "مكتملة"
-                    : "غير مكتملة",
+                  returnedStatus === "submitted" ? "مكتملة" : "غير مكتملة",
                 formStatus: returnedStatus,
                 editStatus: nextEditStatus,
                 editingEnabled: nextOverride,
@@ -545,10 +513,7 @@ function FamiliesPage() {
       if (selectedFamily?.id === family.id) {
         setSelectedFamily((current) => ({
           ...current,
-          status:
-            returnedStatus === "submitted"
-              ? "مكتملة"
-              : "غير مكتملة",
+          status: returnedStatus === "submitted" ? "مكتملة" : "غير مكتملة",
           formStatus: returnedStatus,
           editStatus: nextEditStatus,
           editingEnabled: nextOverride,
@@ -563,10 +528,7 @@ function FamiliesPage() {
             : "تم إغلاق التعديل للأسرة بنجاح."),
       );
     } catch (error) {
-      setErrorMessage(
-        error.message ||
-          "حدث خطأ أثناء تحديث حالة التعديل.",
-      );
+      setErrorMessage(error.message || "حدث خطأ أثناء تحديث حالة التعديل.");
     } finally {
       setActionFamilyId(null);
     }
@@ -588,30 +550,21 @@ function FamiliesPage() {
     setActionFamilyId(familyId);
 
     try {
-      const data = await apiRequest(
-        `/api/admin/families/${familyId}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const data = await apiRequest(`/api/admin/families/${familyId}`, {
+        method: "DELETE",
+      });
 
       handleCloseDeleteFamily();
 
-      setSuccessMessage(
-        data.message || "تم حذف الأسرة بنجاح.",
-      );
+      setSuccessMessage(data.message || "تم حذف الأسرة بنجاح.");
 
       await loadFamilies({
         requestedPage: page,
         preserveSelectedId:
-          selectedFamilyId === familyId
-            ? null
-            : selectedFamilyId,
+          selectedFamilyId === familyId ? null : selectedFamilyId,
       });
     } catch (error) {
-      setErrorMessage(
-        error.message || "حدث خطأ أثناء حذف الأسرة.",
-      );
+      setErrorMessage(error.message || "حدث خطأ أثناء حذف الأسرة.");
     } finally {
       setActionFamilyId(null);
     }
@@ -621,19 +574,14 @@ function FamiliesPage() {
     clearMessages();
 
     try {
-      const data = await apiRequest(
-        "/api/admin/families",
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-        },
-      );
+      const data = await apiRequest("/api/admin/families", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
 
       const newFamilyId = data.data?.family?.id;
 
-      setSuccessMessage(
-        data.message || "تمت إضافة الأسرة بنجاح.",
-      );
+      setSuccessMessage(data.message || "تمت إضافة الأسرة بنجاح.");
 
       setIsAddFamilyOpen(false);
 
@@ -642,9 +590,7 @@ function FamiliesPage() {
         preserveSelectedId: newFamilyId || null,
       });
     } catch (error) {
-      throw new Error(
-        error.message || "حدث خطأ أثناء إضافة الأسرة.",
-      );
+      throw new Error(error.message || "حدث خطأ أثناء إضافة الأسرة.");
     }
   };
 
@@ -655,16 +601,11 @@ function FamiliesPage() {
 
     if (!family?.birthDate) {
       try {
-        const data = await apiRequest(
-          `/api/admin/families/${family.id}`,
-        );
+        const data = await apiRequest(`/api/admin/families/${family.id}`);
 
         fullFamily = normalizeFamilyDetails(data.data);
       } catch (error) {
-        setErrorMessage(
-          error.message ||
-            "تعذر تحميل بيانات الأسرة للتعديل.",
-        );
+        setErrorMessage(error.message || "تعذر تحميل بيانات الأسرة للتعديل.");
         return;
       }
     }
@@ -677,37 +618,19 @@ function FamiliesPage() {
     clearMessages();
 
     const payload = {
-      full_name:
-        updatedFamily.full_name ??
-        updatedFamily.headName,
-      national_id:
-        updatedFamily.national_id ??
-        updatedFamily.nationalId,
+      full_name: updatedFamily.full_name ?? updatedFamily.headName,
+      national_id: updatedFamily.national_id ?? updatedFamily.nationalId,
       phone: updatedFamily.phone,
-      date_of_birth:
-        updatedFamily.date_of_birth ??
-        updatedFamily.birthDate,
-      blood_type:
-        updatedFamily.blood_type ??
-        updatedFamily.bloodType ??
-        null,
+      date_of_birth: updatedFamily.date_of_birth ?? updatedFamily.birthDate,
+      blood_type: updatedFamily.blood_type ?? updatedFamily.bloodType ?? null,
       marital_status:
-        updatedFamily.marital_status ??
-        updatedFamily.maritalStatusValue,
+        updatedFamily.marital_status ?? updatedFamily.maritalStatusValue,
       income_category:
-        updatedFamily.income_category ??
-        updatedFamily.incomeLevel,
-      work_status:
-        updatedFamily.work_status ??
-        updatedFamily.workStatusValue,
-      job_type:
-        updatedFamily.job_type ??
-        updatedFamily.jobTypeValue ??
-        null,
+        updatedFamily.income_category ?? updatedFamily.incomeLevel,
+      work_status: updatedFamily.work_status ?? updatedFamily.workStatusValue,
+      job_type: updatedFamily.job_type ?? updatedFamily.jobTypeValue ?? null,
       other_job_type:
-        updatedFamily.other_job_type ??
-        updatedFamily.otherJobType ??
-        null,
+        updatedFamily.other_job_type ?? updatedFamily.otherJobType ?? null,
     };
 
     Object.keys(payload).forEach((key) => {
@@ -717,17 +640,12 @@ function FamiliesPage() {
     });
 
     try {
-      const data = await apiRequest(
-        `/api/admin/families/${updatedFamily.id}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        },
-      );
+      const data = await apiRequest(`/api/admin/families/${updatedFamily.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
 
-      setSuccessMessage(
-        data.message || "تم تعديل بيانات الأسرة بنجاح.",
-      );
+      setSuccessMessage(data.message || "تم تعديل بيانات الأسرة بنجاح.");
 
       setIsEditFamilyOpen(false);
       setFamilyToEdit(null);
@@ -737,10 +655,7 @@ function FamiliesPage() {
         preserveSelectedId: updatedFamily.id,
       });
     } catch (error) {
-      throw new Error(
-        error.message ||
-          "حدث خطأ أثناء تعديل بيانات الأسرة.",
-      );
+      throw new Error(error.message || "حدث خطأ أثناء تعديل بيانات الأسرة.");
     }
   };
 
@@ -773,9 +688,7 @@ function FamiliesPage() {
   };
 
   const rangeStart =
-    pagination.total === 0
-      ? 0
-      : (pagination.page - 1) * pagination.limit + 1;
+    pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
 
   const rangeEnd = Math.min(
     pagination.page * pagination.limit,
@@ -804,9 +717,7 @@ function FamiliesPage() {
 
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
-          <h1 className="text-2xl font-bold text-[#031632]">
-            الأسر المسجلة
-          </h1>
+          <h1 className="text-2xl font-bold text-[#031632]">الأسر المسجلة</h1>
 
           <p className="mt-2 text-slate-500">
             إدارة والبحث في سجلات الأسر المسجلة في النظام
@@ -829,12 +740,8 @@ function FamiliesPage() {
             className="h-5 w-5"
             aria-hidden="true"
           >
-            <path
-              d="M12 5v14M5 12h14"
-              strokeLinecap="round"
-            />
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
           </svg>
-
           إضافة أسرة
         </button>
       </div>
@@ -854,9 +761,7 @@ function FamiliesPage() {
                 id="familySearch"
                 type="search"
                 value={searchTerm}
-                onChange={(event) =>
-                  setSearchTerm(event.target.value)
-                }
+                onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="أدخل كلمة البحث..."
                 className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 pr-11 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff]"
               />
@@ -870,10 +775,7 @@ function FamiliesPage() {
                 aria-hidden="true"
               >
                 <circle cx="11" cy="11" r="7" />
-                <path
-                  d="m20 20-4-4"
-                  strokeLinecap="round"
-                />
+                <path d="m20 20-4-4" strokeLinecap="round" />
               </svg>
             </div>
           </div>
@@ -889,16 +791,12 @@ function FamiliesPage() {
             <select
               id="regionFilter"
               value={regionFilter}
-              onChange={(event) =>
-                setRegionFilter(event.target.value)
-              }
+              onChange={(event) => setRegionFilter(event.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none focus:border-[#031632]"
             >
               <option value="الكل">الكل</option>
               <option value="غزة">غزة</option>
-              <option value="المنطقة الوسطى">
-                المنطقة الوسطى
-              </option>
+              <option value="المنطقة الوسطى">المنطقة الوسطى</option>
               <option value="شمال غزة">شمال غزة</option>
               <option value="جنوب غزة">جنوب غزة</option>
             </select>
@@ -915,16 +813,12 @@ function FamiliesPage() {
             <select
               id="statusFilter"
               value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value)
-              }
+              onChange={(event) => setStatusFilter(event.target.value)}
               className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none focus:border-[#031632]"
             >
               <option value="الكل">الكل</option>
               <option value="مكتملة">مكتملة</option>
-              <option value="غير مكتملة">
-                غير مكتملة
-              </option>
+              <option value="غير مكتملة">غير مكتملة</option>
             </select>
           </div>
         </div>
@@ -970,17 +864,13 @@ function FamiliesPage() {
                   <tr
                     key={family.id}
                     className={`border-b border-slate-100 last:border-b-0 ${
-                      selectedFamilyId === family.id
-                        ? "bg-[#fbfcff]"
-                        : ""
+                      selectedFamilyId === family.id ? "bg-[#fbfcff]" : ""
                     }`}
                   >
                     <td className="px-3 py-4">
                       <button
                         type="button"
-                        onClick={() =>
-                          handleSelectFamily(family.id)
-                        }
+                        onClick={() => handleSelectFamily(family.id)}
                         className="flex items-center gap-3 text-right"
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#dbe6ff] text-sm font-bold text-[#031632]">
@@ -1002,9 +892,7 @@ function FamiliesPage() {
                       {family.nationalId}
                     </td>
 
-                    <td className="px-3 py-4 text-slate-600">
-                      {family.phone}
-                    </td>
+                    <td className="px-3 py-4 text-slate-600">{family.phone}</td>
 
                     <td className="px-3 py-4 text-slate-600">
                       {family.region}
@@ -1034,9 +922,7 @@ function FamiliesPage() {
                       <div className="flex items-center gap-2">
                         <IconButton
                           label="عرض التفاصيل"
-                          onClick={() =>
-                            handleSelectFamily(family.id)
-                          }
+                          onClick={() => handleSelectFamily(family.id)}
                         >
                           <svg
                             viewBox="0 0 24 24"
@@ -1047,19 +933,13 @@ function FamiliesPage() {
                             aria-hidden="true"
                           >
                             <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="2.5"
-                            />
+                            <circle cx="12" cy="12" r="2.5" />
                           </svg>
                         </IconButton>
 
                         <IconButton
                           label="تعديل الأسرة"
-                          onClick={() =>
-                            handleOpenEditFamily(family)
-                          }
+                          onClick={() => handleOpenEditFamily(family)}
                         >
                           <svg
                             viewBox="0 0 24 24"
@@ -1069,10 +949,7 @@ function FamiliesPage() {
                             className="h-5 w-5"
                             aria-hidden="true"
                           >
-                            <path
-                              d="M12 20h9"
-                              strokeLinecap="round"
-                            />
+                            <path d="M12 20h9" strokeLinecap="round" />
                             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
                           </svg>
                         </IconButton>
@@ -1083,12 +960,8 @@ function FamiliesPage() {
                               ? "إغلاق التعديل"
                               : "إعادة فتح التعديل"
                           }
-                          disabled={
-                            actionFamilyId === family.id
-                          }
-                          onClick={() =>
-                            handleToggleEditStatus(family)
-                          }
+                          disabled={actionFamilyId === family.id}
+                          onClick={() => handleToggleEditStatus(family)}
                         >
                           {family.editStatus === "open" ? (
                             <svg
@@ -1132,12 +1005,8 @@ function FamiliesPage() {
                         <IconButton
                           label="حذف الأسرة"
                           danger
-                          disabled={
-                            actionFamilyId === family.id
-                          }
-                          onClick={() =>
-                            handleOpenDeleteFamily(family)
-                          }
+                          disabled={actionFamilyId === family.id}
+                          onClick={() => handleOpenDeleteFamily(family)}
                         >
                           <svg
                             viewBox="0 0 24 24"
@@ -1161,17 +1030,14 @@ function FamiliesPage() {
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:flex-row">
           <p>
-            عرض {rangeStart}-{rangeEnd} من{" "}
-            {pagination.total}
+            عرض {rangeStart}-{rangeEnd} من {pagination.total}
           </p>
 
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handlePreviousPage}
-              disabled={
-                !pagination.has_previous_page || loading
-              }
+              disabled={!pagination.has_previous_page || loading}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eef2ff] text-[#031632] disabled:cursor-not-allowed disabled:opacity-40"
             >
               ‹
@@ -1180,9 +1046,7 @@ function FamiliesPage() {
             <button
               type="button"
               onClick={handleNextPage}
-              disabled={
-                !pagination.has_next_page || loading
-              }
+              disabled={!pagination.has_next_page || loading}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-[#eef2ff] text-[#031632] disabled:cursor-not-allowed disabled:opacity-40"
             >
               ›
@@ -1223,32 +1087,26 @@ function FamiliesPage() {
               </span>
 
               <div>
-                <p className="text-sm text-slate-500">
-                  أسرة:
-                </p>
+                <p className="text-sm text-slate-500">أسرة:</p>
 
                 <h2 className="text-2xl font-bold text-[#031632]">
                   {selectedFamily.headName}
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  رقم هوية رب الأسرة:{" "}
-                  {selectedFamily.nationalId}
+                  رقم هوية رب الأسرة: {selectedFamily.nationalId}
                 </p>
 
                 <p className="mt-1 text-sm">
                   حالة التعديل:
                   <span
                     className={`mr-2 font-semibold ${
-                      selectedFamily.editStatus ===
-                      "open"
+                      selectedFamily.editStatus === "open"
                         ? "text-green-700"
                         : "text-red-600"
                     }`}
                   >
-                    {selectedFamily.editStatus === "open"
-                      ? "مفتوح"
-                      : "مغلق"}
+                    {selectedFamily.editStatus === "open" ? "مفتوح" : "مغلق"}
                   </span>
                 </p>
               </div>
@@ -1256,9 +1114,7 @@ function FamiliesPage() {
 
             <button
               type="button"
-              onClick={() =>
-                handleOpenEditFamily(selectedFamily)
-              }
+              onClick={() => handleOpenEditFamily(selectedFamily)}
               className="flex w-fit items-center gap-2 rounded-xl border-2 border-[#031632] px-5 py-3 font-semibold text-[#031632] transition hover:bg-[#031632] hover:text-white"
             >
               <svg
@@ -1269,13 +1125,9 @@ function FamiliesPage() {
                 className="h-5 w-5"
                 aria-hidden="true"
               >
-                <path
-                  d="M12 20h9"
-                  strokeLinecap="round"
-                />
+                <path d="M12 20h9" strokeLinecap="round" />
                 <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
               </svg>
-
               تعديل بيانات الأسرة
             </button>
           </div>
@@ -1296,42 +1148,18 @@ function FamiliesPage() {
                 </svg>
               }
             >
-              <InfoRow
-                label="الاسم الرباعي"
-                value={selectedFamily.headName}
-              />
-              <InfoRow
-                label="رقم الهوية"
-                value={selectedFamily.nationalId}
-              />
-              <InfoRow
-                label="تاريخ الميلاد"
-                value={selectedFamily.birthDate}
-              />
-              <InfoRow
-                label="رقم الجوال"
-                value={selectedFamily.phone}
-              />
-              <InfoRow
-                label="فصيلة الدم"
-                value={selectedFamily.bloodType}
-              />
+              <InfoRow label="الاسم الرباعي" value={selectedFamily.headName} />
+              <InfoRow label="رقم الهوية" value={selectedFamily.nationalId} />
+              <InfoRow label="تاريخ الميلاد" value={selectedFamily.birthDate} />
+              <InfoRow label="رقم الجوال" value={selectedFamily.phone} />
+              <InfoRow label="فصيلة الدم" value={selectedFamily.bloodType} />
               <InfoRow
                 label="الحالة الاجتماعية"
                 value={selectedFamily.maritalStatus}
               />
-              <InfoRow
-                label="فئة الدخل"
-                value={selectedFamily.incomeLevel}
-              />
-              <InfoRow
-                label="حالة العمل"
-                value={selectedFamily.workStatus}
-              />
-              <InfoRow
-                label="نوع الوظيفة"
-                value={selectedFamily.jobType}
-              />
+              <InfoRow label="فئة الدخل" value={selectedFamily.incomeLevel} />
+              <InfoRow label="حالة العمل" value={selectedFamily.workStatus} />
+              <InfoRow label="نوع الوظيفة" value={selectedFamily.jobType} />
             </DetailCard>
 
             <DetailCard
@@ -1390,34 +1218,27 @@ function FamiliesPage() {
                       key={wife.id || wife.nationalId}
                       className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
                     >
-                      <p className="font-bold text-[#031632]">
-                        {wife.name}
-                      </p>
+                      <p className="font-bold text-[#031632]">{wife.name}</p>
                       <p className="mt-2 text-sm text-slate-600">
                         الهوية: {wife.nationalId || "—"}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        تاريخ الميلاد:{" "}
-                        {wife.birthDate || "—"}
+                        تاريخ الميلاد: {wife.birthDate || "—"}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
                         الجوال: {wife.phone || "—"}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        العائلة السابقة:{" "}
-                        {wife.previousFamily || "—"}
+                        العائلة السابقة: {wife.previousFamily || "—"}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        الحالة الوظيفية:{" "}
-                        {wife.employmentStatus || "—"}
+                        الحالة الوظيفية: {wife.employmentStatus || "—"}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500">
-                  لا توجد بيانات زوجات.
-                </p>
+                <p className="text-slate-500">لا توجد بيانات زوجات.</p>
               )}
             </DetailCard>
           </div>
@@ -1443,39 +1264,29 @@ function FamiliesPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   {selectedFamily.children.map((child) => (
                     <div
-                      key={
-                        child.id || child.nationalId
-                      }
+                      key={child.id || child.nationalId}
                       className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
                     >
-                      <p className="font-bold text-[#031632]">
-                        {child.name}
-                      </p>
+                      <p className="font-bold text-[#031632]">{child.name}</p>
                       <p className="mt-2 text-sm text-slate-600">
-                        الهوية:{" "}
-                        {child.nationalId || "—"}
+                        الهوية: {child.nationalId || "—"}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        تاريخ الميلاد:{" "}
-                        {child.birthDate || "—"}
+                        تاريخ الميلاد: {child.birthDate || "—"}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
-                        الحالة التعليمية:{" "}
-                        {child.education || "—"}
+                        الحالة التعليمية: {child.education || "—"}
                       </p>
                       {child.institutionName && (
                         <p className="mt-1 text-sm text-slate-600">
-                          المؤسسة التعليمية:{" "}
-                          {child.institutionName}
+                          المؤسسة التعليمية: {child.institutionName}
                         </p>
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500">
-                  لا توجد بيانات أبناء.
-                </p>
+                <p className="text-slate-500">لا توجد بيانات أبناء.</p>
               )}
             </DetailCard>
 
@@ -1497,41 +1308,31 @@ function FamiliesPage() {
               >
                 {selectedFamily.specialCases.length ? (
                   <div className="space-y-3">
-                    {selectedFamily.specialCases.map(
-                      (specialCase) => (
-                        <div
-                          key={
-                            specialCase.id ||
-                            `${specialCase.personName}-${specialCase.caseType}`
-                          }
-                          className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
-                        >
-                          <p className="font-bold text-[#031632]">
-                            {specialCase.personName}
-                          </p>
-                          <p className="mt-2 text-sm text-slate-600">
-                            صلة القرابة:{" "}
-                            {specialCase.relation ||
-                              "—"}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            نوع الحالة:{" "}
-                            {specialCase.caseType ||
-                              "—"}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            التفاصيل:{" "}
-                            {specialCase.details ||
-                              "—"}
-                          </p>
-                        </div>
-                      ),
-                    )}
+                    {selectedFamily.specialCases.map((specialCase) => (
+                      <div
+                        key={
+                          specialCase.id ||
+                          `${specialCase.personName}-${specialCase.caseType}`
+                        }
+                        className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+                      >
+                        <p className="font-bold text-[#031632]">
+                          {specialCase.personName}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-600">
+                          صلة القرابة: {specialCase.relation || "—"}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          نوع الحالة: {specialCase.caseType || "—"}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          التفاصيل: {specialCase.details || "—"}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500">
-                    لا توجد حالات خاصة.
-                  </p>
+                  <p className="text-slate-500">لا توجد حالات خاصة.</p>
                 )}
               </DetailCard>
 
@@ -1549,48 +1350,33 @@ function FamiliesPage() {
                   </svg>
                 }
               >
-                {selectedFamily.marriedDaughters
-                  .length ? (
+                {selectedFamily.marriedDaughters.length ? (
                   <div className="space-y-3">
-                    {selectedFamily.marriedDaughters.map(
-                      (daughter) => (
-                        <div
-                          key={
-                            daughter.id ||
-                            daughter.nationalId
-                          }
-                          className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
-                        >
-                          <p className="font-bold text-[#031632]">
-                            {daughter.name}
-                          </p>
-                          <p className="mt-2 text-sm text-slate-600">
-                            الهوية:{" "}
-                            {daughter.nationalId ||
-                              "—"}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            الجوال:{" "}
-                            {daughter.phone || "—"}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            اسم الزوج:{" "}
-                            {daughter.husbandName ||
-                              "—"}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            جوال الزوج:{" "}
-                            {daughter.husbandPhone ||
-                              "—"}
-                          </p>
-                        </div>
-                      ),
-                    )}
+                    {selectedFamily.marriedDaughters.map((daughter) => (
+                      <div
+                        key={daughter.id || daughter.nationalId}
+                        className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+                      >
+                        <p className="font-bold text-[#031632]">
+                          {daughter.name}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-600">
+                          الهوية: {daughter.nationalId || "—"}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          الجوال: {daughter.phone || "—"}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          اسم الزوج: {daughter.husbandName || "—"}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          جوال الزوج: {daughter.husbandPhone || "—"}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500">
-                    لا توجد بنات متزوجات.
-                  </p>
+                  <p className="text-slate-500">لا توجد بنات متزوجات.</p>
                 )}
               </DetailCard>
             </div>

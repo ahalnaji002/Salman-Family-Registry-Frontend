@@ -29,7 +29,6 @@ const exportContents = [
   },
 ];
 
-
 function FilterIcon() {
   return (
     <svg
@@ -65,16 +64,9 @@ function ExcelIcon() {
         strokeLinejoin="round"
       />
 
-      <path
-        d="M15 3v5h5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M15 3v5h5" strokeLinecap="round" strokeLinejoin="round" />
 
-      <path
-        d="m8 12 4 5M12 12l-4 5"
-        strokeLinecap="round"
-      />
+      <path d="m8 12 4 5M12 12l-4 5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -89,11 +81,7 @@ function ResetIcon() {
       className="h-5 w-5"
       aria-hidden="true"
     >
-      <path
-        d="M4 4v6h6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M4 4v6h6" strokeLinecap="round" strokeLinejoin="round" />
 
       <path
         d="M5.5 15a8 8 0 1 0 1.2-8.4L4 10"
@@ -173,14 +161,12 @@ function ExportPage() {
   };
 
   const getAdminToken = () =>
-    localStorage.getItem("adminToken") ||
-    sessionStorage.getItem("adminToken");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const clearAdminSession = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-    sessionStorage.removeItem("adminToken");
-    sessionStorage.removeItem("adminUser");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   const buildFiltersQuery = () => {
@@ -240,7 +226,7 @@ function ExportPage() {
 
       if (!token) {
         clearAdminSession();
-        window.location.href = "/admin/login";
+        window.location.href = "/login";
         return;
       }
 
@@ -274,7 +260,7 @@ function ExportPage() {
 
         if (response.status === 401) {
           clearAdminSession();
-          window.location.href = "/admin/login";
+          window.location.href = "/login";
           return;
         }
 
@@ -330,7 +316,7 @@ function ExportPage() {
 
     if (!token) {
       clearAdminSession();
-      window.location.href = "/admin/login";
+      window.location.href = "/login";
       return;
     }
 
@@ -355,42 +341,33 @@ function ExportPage() {
 
       if (response.status === 401) {
         clearAdminSession();
-        window.location.href = "/admin/login";
+        window.location.href = "/login";
         return;
       }
 
       if (response.status === 403) {
         const data = await response.json().catch(() => ({}));
 
-        throw new Error(
-          data.message || "ليس لديك صلاحية لتصدير البيانات.",
-        );
+        throw new Error(data.message || "ليس لديك صلاحية لتصدير البيانات.");
       }
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
 
-        throw new Error(
-          data.message || "حدث خطأ أثناء تصدير البيانات.",
-        );
+        throw new Error(data.message || "حدث خطأ أثناء تصدير البيانات.");
       }
 
       const blob = await response.blob();
 
       setFileSize(formatFileSize(blob.size));
 
-      const contentDisposition =
-        response.headers.get("Content-Disposition");
+      const contentDisposition = response.headers.get("Content-Disposition");
 
-      const fileNameMatch = contentDisposition?.match(
-        /filename="?([^";]+)"?/i,
-      );
+      const fileNameMatch = contentDisposition?.match(/filename="?([^";]+)"?/i);
 
       const fileName =
         fileNameMatch?.[1] ||
-        `salman-families-${new Date()
-          .toISOString()
-          .slice(0, 10)}.xlsx`;
+        `salman-families-${new Date().toISOString().slice(0, 10)}.xlsx`;
 
       const exportInfo = {
         fileName,
@@ -415,9 +392,7 @@ function ExportPage() {
 
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      window.alert(
-        error.message || "حدث خطأ أثناء تصدير البيانات.",
-      );
+      window.alert(error.message || "حدث خطأ أثناء تصدير البيانات.");
     } finally {
       setIsExporting(false);
     }
@@ -426,13 +401,11 @@ function ExportPage() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-[#031632]">
-          تصدير البيانات
-        </h1>
+        <h1 className="text-3xl font-bold text-[#031632]">تصدير البيانات</h1>
 
         <p className="mt-2 max-w-3xl leading-7 text-slate-500">
-          حدّد معايير تصدير بيانات الأسر، وسيتم إنشاء ملف Excel منظم يحتوي
-          على المعلومات المطلوبة.
+          حدّد معايير تصدير بيانات الأسر، وسيتم إنشاء ملف Excel منظم يحتوي على
+          المعلومات المطلوبة.
         </p>
       </div>
 
@@ -467,9 +440,7 @@ function ExportPage() {
                   </span>
 
                   <div>
-                    <p className="font-bold text-[#111c2c]">
-                      {item.label}
-                    </p>
+                    <p className="font-bold text-[#111c2c]">{item.label}</p>
 
                     <p className="mt-1 text-xs leading-5 text-slate-500">
                       {item.description}
@@ -493,10 +464,7 @@ function ExportPage() {
               <div>
                 {lastExport ? (
                   <>
-                    <p
-                      dir="ltr"
-                      className="font-bold text-[#111c2c]"
-                    >
+                    <p dir="ltr" className="font-bold text-[#111c2c]">
                       {lastExport.fileName}
                     </p>
 
@@ -509,7 +477,11 @@ function ExportPage() {
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span className="inline-flex rounded-full bg-[#dbe6ff] px-3 py-1 text-xs font-medium text-[#031632]">
-                        تم تصدير {Number(lastExport.familiesCount || 0).toLocaleString("en-US")} أسرة
+                        تم تصدير{" "}
+                        {Number(lastExport.familiesCount || 0).toLocaleString(
+                          "en-US",
+                        )}{" "}
+                        أسرة
                       </span>
 
                       <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
@@ -618,40 +590,38 @@ function ExportPage() {
 
           <div className="mt-7 grid overflow-hidden rounded-2xl border border-[#d7e2ff] bg-[#f8f9ff] sm:grid-cols-3">
             {[
-  {
-    label: "عدد الأسر المطابقة",
-    value: isLoadingStats
-      ? "..."
-      : familiesCount.toLocaleString("en-US"),
-  },
-  {
-    label: "عدد الأفراد",
-    value: isLoadingStats
-      ? "..."
-      : membersCount.toLocaleString("en-US"),
-  },
-  {
-    label: "حجم الملف",
-    value: fileSize,
-  },
-].map((stat, index, stats) => (
-  <div
-    key={stat.label}
-    className={`p-5 text-center ${
-      index !== stats.length - 1
-        ? "border-b border-[#d7e2ff] sm:border-b-0 sm:border-l"
-        : ""
-    }`}
-  >
-    <p className="text-3xl font-bold text-[#031632]">
-  {stat.value}
-</p>
+              {
+                label: "عدد الأسر المطابقة",
+                value: isLoadingStats
+                  ? "..."
+                  : familiesCount.toLocaleString("en-US"),
+              },
+              {
+                label: "عدد الأفراد",
+                value: isLoadingStats
+                  ? "..."
+                  : membersCount.toLocaleString("en-US"),
+              },
+              {
+                label: "حجم الملف",
+                value: fileSize,
+              },
+            ].map((stat, index, stats) => (
+              <div
+                key={stat.label}
+                className={`p-5 text-center ${
+                  index !== stats.length - 1
+                    ? "border-b border-[#d7e2ff] sm:border-b-0 sm:border-l"
+                    : ""
+                }`}
+              >
+                <p className="text-3xl font-bold text-[#031632]">
+                  {stat.value}
+                </p>
 
-    <p className="mt-2 text-sm text-slate-600">
-      {stat.label}
-    </p>
-  </div>
-))}
+                <p className="mt-2 text-sm text-slate-600">{stat.label}</p>
+              </div>
+            ))}
           </div>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_2fr]">
@@ -672,15 +642,12 @@ function ExportPage() {
             >
               <ExcelIcon />
 
-              {isExporting
-                ? "جارٍ تجهيز الملف..."
-                : "تصدير ملف Excel"}
+              {isExporting ? "جارٍ تجهيز الملف..." : "تصدير ملف Excel"}
             </button>
           </div>
 
           <p className="mt-4 text-center text-sm leading-6 text-slate-500">
-            سيتم إنشاء ملف Excel واحد يحتوي على عدة أوراق لتنظيم بيانات
-            الأسر.
+            سيتم إنشاء ملف Excel واحد يحتوي على عدة أوراق لتنظيم بيانات الأسر.
           </p>
         </article>
       </div>

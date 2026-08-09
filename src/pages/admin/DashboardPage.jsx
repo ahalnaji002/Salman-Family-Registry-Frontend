@@ -44,14 +44,12 @@ function DashboardPage() {
   const [isEditSupervisorOpen, setIsEditSupervisorOpen] = useState(false);
 
   const getAdminToken = () =>
-    localStorage.getItem("adminToken") || sessionStorage.getItem("adminToken");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const clearAdminSession = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-
-    sessionStorage.removeItem("adminToken");
-    sessionStorage.removeItem("adminUser");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   useEffect(() => {
@@ -61,9 +59,7 @@ function DashboardPage() {
       if (!token) {
         clearAdminSession();
 
-        navigate("/admin/login", {
-          replace: true,
-        });
+        navigate("/login", { replace: true });
 
         return;
       }
@@ -84,13 +80,16 @@ function DashboardPage() {
 
         const data = await response.json().catch(() => ({}));
 
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
           clearAdminSession();
+          navigate("/login", { replace: true });
+          return;
+        }
 
-          navigate("/admin/login", {
-            replace: true,
-          });
-
+        if (response.status === 403) {
+          setStatsError(
+            data.message || "ليس لديك صلاحية للوصول إلى هذه البيانات.",
+          );
           return;
         }
 

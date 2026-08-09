@@ -30,18 +30,17 @@ function SettingsPage() {
   const [backupSuccessMessage, setBackupSuccessMessage] = useState("");
 
   const getAdminToken = () =>
-    localStorage.getItem("adminToken") || sessionStorage.getItem("adminToken");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const clearAdminSession = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-    sessionStorage.removeItem("adminToken");
-    sessionStorage.removeItem("adminUser");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
   const handleUnauthorized = () => {
     clearAdminSession();
-    window.location.href = "/admin/login";
+    window.location.href = "/login";
   };
 
   const toDateInputValue = (value) => {

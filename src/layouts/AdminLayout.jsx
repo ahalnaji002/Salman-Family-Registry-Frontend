@@ -1,12 +1,5 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-import {
-  NavLink,
-  Outlet,
-  useNavigate,
-} from "react-router";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useNavigate } from "react-router";
 import logo from "../assets/images/salman-family-logo.png";
 
 const API_BASE_URL = "http://localhost:5000";
@@ -25,34 +18,10 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
-        <rect
-          x="3"
-          y="3"
-          width="7"
-          height="7"
-          rx="1.5"
-        />
-        <rect
-          x="14"
-          y="3"
-          width="7"
-          height="7"
-          rx="1.5"
-        />
-        <rect
-          x="3"
-          y="14"
-          width="7"
-          height="7"
-          rx="1.5"
-        />
-        <rect
-          x="14"
-          y="14"
-          width="7"
-          height="7"
-          rx="1.5"
-        />
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
       </svg>
     ),
   },
@@ -68,11 +37,7 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
-        <circle
-          cx="9.5"
-          cy="7.5"
-          r="3.5"
-        />
+        <circle cx="9.5" cy="7.5" r="3.5" />
 
         <path
           strokeLinecap="round"
@@ -100,11 +65,7 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 3v12"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12" />
 
         <path
           strokeLinecap="round"
@@ -112,11 +73,7 @@ const navigationItems = [
           d="m7.5 10.5 4.5 4.5 4.5-4.5"
         />
 
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M5 20h14"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 20h14" />
       </svg>
     ),
   },
@@ -132,11 +89,7 @@ const navigationItems = [
         className="h-6 w-6"
         aria-hidden="true"
       >
-        <circle
-          cx="12"
-          cy="12"
-          r="3"
-        />
+        <circle cx="12" cy="12" r="3" />
 
         <path
           strokeLinecap="round"
@@ -151,29 +104,20 @@ const navigationItems = [
 function AdminLayout() {
   const navigate = useNavigate();
 
-  const [isSidebarOpen, setIsSidebarOpen] =
-    useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const [checkingAuth, setCheckingAuth] =
-    useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  const [adminUser, setAdminUser] =
-    useState(null);
+  const [adminUser, setAdminUser] = useState(null);
 
   const getAdminToken = () =>
-    localStorage.getItem("adminToken") ||
-    sessionStorage.getItem("adminToken");
+    localStorage.getItem("token") || sessionStorage.getItem("token");
 
   const clearAdminSession = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
-    sessionStorage.removeItem(
-      "adminToken",
-    );
-    sessionStorage.removeItem(
-      "adminUser",
-    );
+    sessionStorage.removeItem("token");
   };
 
   useEffect(() => {
@@ -183,7 +127,7 @@ function AdminLayout() {
       if (!token) {
         clearAdminSession();
 
-        navigate("/admin/login", {
+        navigate("/login", {
           replace: true,
         });
 
@@ -192,79 +136,47 @@ function AdminLayout() {
 
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/auth/me`,
+          `${API_BASE_URL}/api/auth/me?t=${Date.now()}`,
           {
+            method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/json",
             },
+            cache: "no-store",
           },
         );
 
-        const data = await response
-          .json()
-          .catch(() => ({}));
-
+        const data = await response.json().catch(() => ({}));
+        const user = data.data?.user || data.user;
         if (!response.ok) {
-          throw new Error(
-            data.message ||
-              "انتهت جلسة تسجيل الدخول.",
-          );
-        }
-
-        const user = data.data?.user;
-
-        const storedAdminRaw =
-          localStorage.getItem("adminUser") ||
-          sessionStorage.getItem("adminUser");
-
-        let storedAdmin = null;
-
-        try {
-          storedAdmin = storedAdminRaw
-            ? JSON.parse(storedAdminRaw)
-            : null;
-        } catch {
-          storedAdmin = null;
+          throw new Error(data.message || "انتهت جلسة تسجيل الدخول.");
         }
 
         const userRoles = Array.isArray(user?.roles)
           ? user.roles
-          : Array.isArray(storedAdmin?.roles)
-            ? storedAdmin.roles
-            : user?.role
-              ? [user.role]
-              : storedAdmin?.role
-                ? [storedAdmin.role]
-                : [];
+          : user?.role
+            ? [user.role]
+            : [];
 
         if (!user || !userRoles.includes("admin")) {
-          throw new Error(
-            "ليس لديك صلاحية الدخول إلى لوحة الإدارة.",
-          );
+          throw new Error("ليس لديك صلاحية الدخول إلى لوحة الإدارة.");
         }
 
         const normalizedAdminUser = {
-          ...storedAdmin,
           ...user,
           roles: userRoles,
         };
 
         setAdminUser(normalizedAdminUser);
 
-        const storage =
-          localStorage.getItem("adminToken")
-            ? localStorage
-            : sessionStorage;
+        localStorage.setItem("user", JSON.stringify(normalizedAdminUser));
+      } catch (error) {
+        console.error("Admin auth error:", error);
 
-        storage.setItem(
-          "adminUser",
-          JSON.stringify(normalizedAdminUser),
-        );
-      } catch {
         clearAdminSession();
 
-        navigate("/admin/login", {
+        navigate("/login", {
           replace: true,
         });
       } finally {
@@ -283,15 +195,12 @@ function AdminLayout() {
     clearAdminSession();
     closeSidebar();
 
-    navigate("/admin/login", {
+    navigate("/login", {
       replace: true,
     });
   };
 
-  const adminInitial =
-    adminUser?.full_name
-      ?.trim()
-      ?.charAt(0) || "م";
+  const adminInitial = adminUser?.full_name?.trim()?.charAt(0) || "م";
 
   if (checkingAuth) {
     return (
@@ -315,10 +224,7 @@ function AdminLayout() {
   }
 
   return (
-    <div
-      dir="rtl"
-      className="min-h-screen bg-[#f8f9ff]"
-    >
+    <div dir="rtl" className="min-h-screen bg-[#f8f9ff]">
       {isSidebarOpen && (
         <button
           type="button"
@@ -330,9 +236,7 @@ function AdminLayout() {
 
       <aside
         className={`fixed right-0 top-0 z-50 flex h-screen w-64 flex-col border-l border-white/10 bg-[#031632] text-white shadow-xl transition-transform duration-300 ${
-          isSidebarOpen
-            ? "translate-x-0"
-            : "translate-x-full"
+          isSidebarOpen ? "translate-x-0" : "translate-x-full"
         } md:translate-x-0`}
       >
         <div className="flex items-center gap-3 border-b border-white/10 px-4 py-4">
@@ -343,13 +247,9 @@ function AdminLayout() {
           />
 
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold">
-              عائلة سلمان
-            </h1>
+            <h1 className="truncate text-lg font-bold">عائلة سلمان</h1>
 
-            <p className="mt-1 text-sm text-slate-300">
-              سجل العائلة
-            </p>
+            <p className="mt-1 text-sm text-slate-300">سجل العائلة</p>
           </div>
 
           <button
@@ -369,9 +269,7 @@ function AdminLayout() {
               to={item.path}
               end={item.end}
               onClick={closeSidebar}
-              className={({
-                isActive,
-              }) =>
+              className={({ isActive }) =>
                 `flex items-center gap-3 rounded-xl px-4 py-3.5 text-base font-semibold transition ${
                   isActive
                     ? "bg-[#fffdf7] text-[#c89200] shadow-sm"
@@ -432,9 +330,7 @@ function AdminLayout() {
               <button
                 type="button"
                 aria-label="فتح القائمة"
-                onClick={() =>
-                  setIsSidebarOpen(true)
-                }
+                onClick={() => setIsSidebarOpen(true)}
                 className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-xl text-[#031632] hover:bg-slate-100 md:hidden"
               >
                 ☰
@@ -445,9 +341,7 @@ function AdminLayout() {
                   عائلة سلمان
                 </h2>
 
-                <p className="text-sm text-slate-500">
-                  لوحة التحكم الإدارية
-                </p>
+                <p className="text-sm text-slate-500">لوحة التحكم الإدارية</p>
               </div>
             </div>
 
@@ -457,9 +351,7 @@ function AdminLayout() {
                   {adminUser.full_name}
                 </p>
 
-                <p className="text-xs text-slate-500">
-                  مدير النظام
-                </p>
+                <p className="text-xs text-slate-500">مدير النظام</p>
               </div>
 
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e7eeff] font-bold text-[#031632]">
@@ -477,13 +369,9 @@ function AdminLayout() {
 
         <footer className="border-t border-slate-200 bg-white px-4 py-4 text-sm text-slate-500">
           <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center justify-between gap-3 md:flex-row">
-            <p>
-              © 2026 جميع الحقوق محفوظة لعائلة سلمان
-            </p>
+            <p>© 2026 جميع الحقوق محفوظة لعائلة سلمان</p>
 
-            <p className="md:mr-auto">
-              تصميم ومعالجة / أحمد مسعود
-            </p>
+            <p className="md:mr-auto">تصميم ومعالجة / أحمد مسعود</p>
           </div>
         </footer>
       </div>
