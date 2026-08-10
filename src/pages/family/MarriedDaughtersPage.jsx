@@ -15,6 +15,10 @@ function MarriedDaughtersPage() {
   const navigate = useNavigate();
 
   const [marriedDaughters, setMarriedDaughters] = useState([]);
+
+  const [hasMarriedDaughters, setHasMarriedDaughters] = useState(null);
+  const [savingHasMarriedDaughters, setSavingHasMarriedDaughters] =
+    useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDaughterId, setEditingDaughterId] = useState(null);
 
@@ -70,30 +74,50 @@ function MarriedDaughtersPage() {
     setPageError("");
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/family/married-daughters`,
-        {
+      const [daughtersResponse, familyResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/family/married-daughters`, {
           headers: getAuthHeaders(),
-        },
-      );
+        }),
+        fetch(`${API_BASE_URL}/api/family`, {
+          headers: getAuthHeaders(),
+        }),
+      ]);
 
-      const data = await response.json().catch(() => ({}));
+      const daughtersData = await daughtersResponse.json().catch(() => ({}));
+      const familyData = await familyResponse.json().catch(() => ({}));
 
-      if (response.status === 401) {
+      if (daughtersResponse.status === 401 || familyResponse.status === 401) {
         handleUnauthorized();
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(data.message || "تعذر تحميل بيانات البنات المتزوجات.");
+      if (!daughtersResponse.ok) {
+        throw new Error(
+          daughtersData.message || "تعذر تحميل بيانات البنات المتزوجات.",
+        );
+      }
+
+      if (!familyResponse.ok) {
+        throw new Error(familyData.message || "تعذر تحميل بيانات الأسرة.");
       }
 
       const apiDaughters =
-        data.data?.married_daughters || data.married_daughters || [];
+        daughtersData.data?.married_daughters ||
+        daughtersData.married_daughters ||
+        [];
+
+      const family = familyData.data?.family || familyData.family || null;
 
       setMarriedDaughters(apiDaughters.map(mapDaughterFromApi));
 
-      if (apiDaughters.length > 0) {
+      setHasMarriedDaughters(
+        family?.has_married_daughters === null ||
+          family?.has_married_daughters === undefined
+          ? null
+          : Boolean(family.has_married_daughters),
+      );
+
+      if (apiDaughters.length > 0 || family?.has_married_daughters !== null) {
         setIsSaved(true);
       }
     } catch (requestError) {
@@ -107,6 +131,67 @@ function MarriedDaughtersPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleHasMarriedDaughtersChange = async (value) => {
+    if (savingHasMarriedDaughters) {
+      return;
+    }
+
+    if (value === false && marriedDaughters.length > 0) {
+      setPageError(
+        "لا يمكنك اختيار (لا) بوجود بنات متزوجات مسجلات. احذف البيانات أولًا ثم غيّر الإجابة.",
+      );
+      return;
+    }
+
+    setSavingHasMarriedDaughters(true);
+    setPageError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/family`, {
+        method: "PATCH",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          has_married_daughters: value,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "تعذر حفظ إجابة سؤال البنات المتزوجات.",
+        );
+      }
+
+      setHasMarriedDaughters(value);
+      setIsSaved(true);
+
+      setSuccessMessage(
+        value
+          ? "تم حفظ الإجابة: توجد بنات متزوجات."
+          : "تم حفظ الإجابة: لا توجد بنات متزوجات.",
+      );
+
+      window.dispatchEvent(new Event("family-data-updated"));
+    } catch (requestError) {
+      setPageError(
+        requestError.message ||
+          "حدث خطأ أثناء حفظ إجابة سؤال البنات المتزوجات.",
+      );
+    } finally {
+      setSavingHasMarriedDaughters(false);
     }
   };
 
@@ -195,16 +280,14 @@ function MarriedDaughtersPage() {
       }
     }
 
-    if (!daughterForm.phone) {
-      newErrors.phone = "يرجى إدخال رقم جوال البنت.";
-    } else if (!/^05\d{8}$/.test(daughterForm.phone)) {
-      newErrors.phone = "يرجى إدخال رقم جوال صحيح يبدأ بـ 05.";
+    if (!/^05[69]\d{7}$/.test(daughterForm.phone)) {
+      newErrors.phone =
+        "رقم جوال البنت يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام.";
     }
 
-    if (!daughterForm.husbandPhone) {
-      newErrors.husbandPhone = "يرجى إدخال رقم جوال الزوج.";
-    } else if (!/^05\d{8}$/.test(daughterForm.husbandPhone)) {
-      newErrors.husbandPhone = "يرجى إدخال رقم جوال الزوج بشكل صحيح.";
+    if (!/^05[69]\d{7}$/.test(daughterForm.husbandPhone)) {
+      newErrors.husbandPhone =
+        "رقم جوال الزوج يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام.";
     }
 
     setErrors(newErrors);
@@ -369,6 +452,17 @@ function MarriedDaughtersPage() {
   };
 
   const handleSaveAndContinue = () => {
+    if (hasMarriedDaughters === null) {
+      setPageError("يرجى الإجابة عن سؤال وجود بنات متزوجات قبل المتابعة.");
+      return;
+    }
+
+    if (hasMarriedDaughters === true && marriedDaughters.length === 0) {
+      setPageError("يرجى إضافة بنت متزوجة واحدة على الأقل قبل المتابعة.");
+      return;
+    }
+
+    setPageError("");
     navigate("/family/review");
   };
 
@@ -425,188 +519,245 @@ function MarriedDaughtersPage() {
             </div>
           )}
 
-          <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-base font-bold text-[#031632]">
-              البنات المتزوجات المضافات
-            </h2>
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-[#fafafe] p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-[#031632]">
+                  هل لديك بنات متزوجات؟
+                </h2>
 
-            <span className="w-fit rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
-              العدد: {marriedDaughters.length}
-            </span>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  اختر نعم إذا كان لديك بنات متزوجات تريد إضافتهن إلى سجل
+                  الأسرة.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={savingHasMarriedDaughters}
+                  onClick={() => handleHasMarriedDaughtersChange(true)}
+                  className={`min-w-[90px] rounded-xl border px-5 py-3 text-sm font-bold transition disabled:opacity-60 ${
+                    hasMarriedDaughters === true
+                      ? "border-[#031632] bg-[#031632] text-white"
+                      : "border-slate-200 bg-white text-[#031632]"
+                  }`}
+                >
+                  نعم
+                </button>
+
+                <button
+                  type="button"
+                  disabled={savingHasMarriedDaughters}
+                  onClick={() => handleHasMarriedDaughtersChange(false)}
+                  className={`min-w-[90px] rounded-xl border px-5 py-3 text-sm font-bold transition disabled:opacity-60 ${
+                    hasMarriedDaughters === false
+                      ? "border-[#031632] bg-[#031632] text-white"
+                      : "border-slate-200 bg-white text-[#031632]"
+                  }`}
+                >
+                  لا
+                </button>
+              </div>
+            </div>
+
+            {hasMarriedDaughters === null && (
+              <p className="mt-4 text-sm font-semibold text-amber-600">
+                يرجى الإجابة عن هذا السؤال للمتابعة.
+              </p>
+            )}
           </div>
 
-          {marriedDaughters.length === 0 ? (
-            <div className="flex min-h-[390px] flex-col items-center justify-center px-4 py-12 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#eef3ff] text-[#031632]">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-9 w-9"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"
-                  />
+          {hasMarriedDaughters === true && (
+            <>
+              <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-base font-bold text-[#031632]">
+                  البنات المتزوجات المضافات
+                </h2>
 
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M18.75 7.5v6m3-3h-6"
-                  />
-                </svg>
+                <span className="w-fit rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
+                  العدد: {marriedDaughters.length}
+                </span>
               </div>
 
-              <h3 className="mt-5 text-base font-bold text-[#031632]">
-                لم تتم إضافة أي بنت متزوجة حتى الآن.
-              </h3>
+              {marriedDaughters.length === 0 ? (
+                <div className="flex min-h-[390px] flex-col items-center justify-center px-4 py-12 text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#eef3ff] text-[#031632]">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-9 w-9"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"
+                      />
 
-              <p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">
-                اضغط على الزر لإضافة بيانات بنت متزوجة لضمان اكتمال السجل
-                العائلي بدقة.
-              </p>
-
-              <button
-                type="button"
-                onClick={handleAddMarriedDaughter}
-                className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 5v14m7-7H5"
-                  />
-                </svg>
-                إضافة بنت متزوجة
-              </button>
-            </div>
-          ) : (
-            <div className="py-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                {marriedDaughters.map((daughter, index) => (
-                  <div
-                    key={daughter.id}
-                    className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
-                  >
-                    <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-                      <div>
-                        <span className="text-xs font-semibold text-[#d8ad55]">
-                          البنت المتزوجة {index + 1}
-                        </span>
-
-                        <h3 className="mt-1 text-base font-bold text-[#031632]">
-                          {daughter.fullName}
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleEditDaughter(daughter)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
-                          aria-label="تعديل بيانات البنت المتزوجة"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            className="h-4 w-4"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
-                            />
-                          </svg>
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={deletingDaughterId === daughter.id}
-                          onClick={() => handleDeleteDaughter(daughter.id)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label="حذف بيانات البنت المتزوجة"
-                        >
-                          {deletingDaughterId === daughter.id ? (
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              className="h-4 w-4"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
-                              />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs text-slate-500">رقم الهوية</p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {daughter.nationalId}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">اسم الزوج</p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {daughter.husbandName}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">رقم جوال البنت</p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {daughter.phone}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">رقم جوال الزوج</p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {daughter.husbandPhone}
-                        </p>
-                      </div>
-                    </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M18.75 7.5v6m3-3h-6"
+                      />
+                    </svg>
                   </div>
-                ))}
-              </div>
 
-              <button
-                type="button"
-                onClick={handleAddMarriedDaughter}
-                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
-              >
-                إضافة بنت متزوجة أخرى
-              </button>
-            </div>
+                  <h3 className="mt-5 text-base font-bold text-[#031632]">
+                    لم تتم إضافة أي بنت متزوجة حتى الآن.
+                  </h3>
+
+                  <p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">
+                    اضغط على الزر لإضافة بيانات بنت متزوجة لضمان اكتمال السجل
+                    العائلي بدقة.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleAddMarriedDaughter}
+                    className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 5v14m7-7H5"
+                      />
+                    </svg>
+                    إضافة بنت متزوجة
+                  </button>
+                </div>
+              ) : (
+                <div className="py-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {marriedDaughters.map((daughter, index) => (
+                      <div
+                        key={daughter.id}
+                        className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
+                      >
+                        <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                          <div>
+                            <span className="text-xs font-semibold text-[#d8ad55]">
+                              البنت المتزوجة {index + 1}
+                            </span>
+
+                            <h3 className="mt-1 text-base font-bold text-[#031632]">
+                              {daughter.fullName}
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditDaughter(daughter)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
+                              aria-label="تعديل بيانات البنت المتزوجة"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                className="h-4 w-4"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
+                                />
+                              </svg>
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={deletingDaughterId === daughter.id}
+                              onClick={() => handleDeleteDaughter(daughter.id)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label="حذف بيانات البنت المتزوجة"
+                            >
+                              {deletingDaughterId === daughter.id ? (
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  className="h-4 w-4"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <p className="text-xs text-slate-500">رقم الهوية</p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {daughter.nationalId}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">اسم الزوج</p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {daughter.husbandName}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              رقم جوال البنت
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {daughter.phone}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              رقم جوال الزوج
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {daughter.husbandPhone}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddMarriedDaughter}
+                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+                  >
+                    إضافة بنت متزوجة أخرى
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">

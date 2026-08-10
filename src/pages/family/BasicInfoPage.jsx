@@ -191,10 +191,6 @@ function BasicInfoPage() {
   };
 
   const validateForm = () => {
-    if (!existingPhotoPath && !familyPhoto?.file) {
-      return "صورة رب الأسرة مطلوبة.";
-    }
-
     if (!formData.fullName.trim()) {
       return "الاسم الرباعي مطلوب.";
     }
@@ -207,8 +203,8 @@ function BasicInfoPage() {
       return "تاريخ الميلاد مطلوب.";
     }
 
-    if (!/^05\d{8}$/.test(formData.phone)) {
-      return "يرجى إدخال رقم جوال صحيح.";
+    if (!/^05[69]\d{7}$/.test(formData.phone)) {
+      return "رقم الجوال  يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام.";
     }
 
     if (!formData.maritalStatus) {
@@ -351,6 +347,49 @@ function BasicInfoPage() {
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    const confirmed = window.confirm("هل أنت متأكد من حذف صورة رب الأسرة؟");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/family/photo`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || "تعذر حذف الصورة الشخصية.");
+      }
+
+      if (familyPhoto?.preview) {
+        URL.revokeObjectURL(familyPhoto.preview);
+      }
+
+      setFamilyPhoto(null);
+      setExistingPhotoPath("");
+      setIsSaved(true);
+      setSuccessMessage("تم حذف الصورة الشخصية بنجاح.");
+
+      window.dispatchEvent(new Event("family-data-updated"));
+    } catch (requestError) {
+      setError(requestError.message || "حدث خطأ أثناء حذف الصورة الشخصية.");
     }
   };
 
@@ -528,7 +567,6 @@ function BasicInfoPage() {
               <div className="flex-1">
                 <h2 className="text-sm font-bold text-[#031632]">
                   صورة رب الأسرة
-                  <span className="mr-1 text-red-500">*</span>
                 </h2>
 
                 <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -538,7 +576,7 @@ function BasicInfoPage() {
                     onClick={() => fileInputRef.current?.click()}
                     className="rounded-lg bg-[#031632] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#020f23] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {existingPhotoPath ? "تغيير الصورة" : "رفع صورة شخصية"}
+                    {displayedPhoto ? "تغيير الصورة" : "رفع صورة شخصية"}
                   </button>
 
                   {familyPhoto && (
@@ -546,10 +584,21 @@ function BasicInfoPage() {
                       {familyPhoto.file.name}
                     </span>
                   )}
+
+                  {existingPhotoPath && !familyPhoto && (
+                    <button
+                      type="button"
+                      onClick={handleDeletePhoto}
+                      className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                    >
+                      حذف الصورة
+                    </button>
+                  )}
                 </div>
 
                 <p className="mt-2 text-xs leading-6 text-slate-500">
-                  الصورة مطلوبة، بصيغة JPG أو PNG أو WebP، وبحد أقصى 2 ميجابايت.
+                  الصورة اختيارية، بصيغة JPG أو PNG أو WebP، وبحد أقصى 2
+                  ميجابايت.{" "}
                 </p>
 
                 <input
@@ -625,6 +674,7 @@ function BasicInfoPage() {
                 id="dateOfBirth"
                 name="dateOfBirth"
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={formData.dateOfBirth}
                 onChange={handleChange}
                 disabled={saving}
@@ -654,15 +704,15 @@ function BasicInfoPage() {
                 required
                 placeholder="05XXXXXXXX"
                 className={`h-12 w-full rounded-xl border px-4 text-left text-sm text-[#031632] outline-none transition placeholder:text-right placeholder:text-slate-400 disabled:opacity-60 ${
-                  formData.phone && !/^05\d{8}$/.test(formData.phone)
+                  formData.phone && !/^05[69]\d{7}$/.test(formData.phone)
                     ? "border-red-300 bg-[#fffafa] focus:border-red-400 focus:ring-4 focus:ring-red-100"
                     : "border-slate-200 bg-[#fafafe] focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10"
                 }`}
               />
 
-              {formData.phone && !/^05\d{8}$/.test(formData.phone) && (
+              {formData.phone && !/^05[69]\d{7}$/.test(formData.phone) && (
                 <p className="mt-2 text-xs font-medium text-red-500">
-                  يرجى إدخال رقم جوال صحيح.
+                  رقم الجوال يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام.{" "}
                 </p>
               )}
             </div>

@@ -22,9 +22,19 @@ function RegisterPage() {
   const handleChange = (event) => {
     const { name, value } = event.target;
 
+    let finalValue = value;
+
+    if (name === "phone") {
+      finalValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    if (name === "nationalId") {
+      finalValue = value.replace(/\D/g, "").slice(0, 9);
+    }
+
     setForm((current) => ({
       ...current,
-      [name]: value,
+      [name]: finalValue,
     }));
 
     if (errorMessage) {
@@ -45,6 +55,23 @@ function RegisterPage() {
 
     if (nameParts.length < 4) {
       setErrorMessage("اسم رب الأسرة يجب أن يتكون من 4 مقاطع على الأقل.");
+      return;
+    }
+
+    if (!/^\d{9}$/.test(form.nationalId)) {
+      setErrorMessage("رقم الهوية يجب أن يتكون من 9 أرقام.");
+      return;
+    }
+
+    if (!/^05[69]\d{7}$/.test(form.phone)) {
+      setErrorMessage(
+        "رقم الجوال يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام.",
+      );
+      return;
+    }
+
+    if (form.password.length < 8) {
+      setErrorMessage("كلمة المرور يجب أن تتكون من 8 خانات على الأقل.");
       return;
     }
 

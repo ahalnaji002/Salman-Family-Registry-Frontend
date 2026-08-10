@@ -283,13 +283,13 @@ function HomePage() {
                     تذكرني
                   </label>
 
-                  <button
+                  {/*<button
                     type="button"
                     onClick={() => navigate("/forgot-password")}
                     className="font-semibold text-[#031632] hover:underline"
                   >
                     نسيت كلمة المرور؟
-                  </button>
+                  </button>*/}
                 </div>
 
                 {error && (

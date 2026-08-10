@@ -16,6 +16,8 @@ function ChildrenPage() {
   const navigate = useNavigate();
 
   const [children, setChildren] = useState([]);
+  const [hasChildren, setHasChildren] = useState(null);
+  const [savingHasChildren, setSavingHasChildren] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingChildId, setEditingChildId] = useState(null);
   const [childForm, setChildForm] = useState(initialChildForm);
@@ -114,8 +116,101 @@ function ChildrenPage() {
     }
   };
 
+  const loadHasChildren = async () => {
+    if (!token) {
+      handleUnauthorized();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/family`, {
+        headers: getAuthHeaders(),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || "تعذر تحميل إجابة سؤال وجود الأبناء.");
+      }
+
+      const family = data.data?.family || null;
+
+      setHasChildren(
+        family?.has_children === null || family?.has_children === undefined
+          ? null
+          : Boolean(family.has_children),
+      );
+    } catch (requestError) {
+      setPageError(requestError.message || "حدث خطأ أثناء تحميل حالة الأبناء.");
+    }
+  };
+
+  const handleHasChildrenChange = async (value) => {
+    if (savingHasChildren) {
+      return;
+    }
+
+    if (value === false && children.length > 0) {
+      setPageError(
+        "لا يمكنك اختيار (لا) بوجود أبناء مسجلين. احذف بيانات الأبناء أولًا ثم غيّر الإجابة.",
+      );
+      return;
+    }
+
+    setSavingHasChildren(true);
+    setPageError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/family`, {
+        method: "PATCH",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          has_children: value,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || "تعذر حفظ إجابة سؤال وجود الأبناء.");
+      }
+
+      setHasChildren(value);
+      setIsSaved(true);
+
+      setSuccessMessage(
+        value
+          ? "تم حفظ الإجابة: لديك أبناء."
+          : "تم حفظ الإجابة: لا يوجد أبناء.",
+      );
+
+      window.dispatchEvent(new Event("family-data-updated"));
+    } catch (requestError) {
+      setPageError(
+        requestError.message || "حدث خطأ أثناء حفظ إجابة سؤال الأبناء.",
+      );
+    } finally {
+      setSavingHasChildren(false);
+    }
+  };
+
   useEffect(() => {
     loadChildren();
+    loadHasChildren();
   }, []);
 
   const handleAddChild = () => {
@@ -199,6 +294,14 @@ function ChildrenPage() {
 
     if (!childForm.dateOfBirth) {
       newErrors.dateOfBirth = "يرجى اختيار تاريخ الميلاد.";
+    } else {
+      const birthDate = new Date(`${childForm.dateOfBirth}T00:00:00`);
+      const today = new Date();
+
+      if (Number.isNaN(birthDate.getTime()) || birthDate > today) {
+        newErrors.dateOfBirth =
+          "تاريخ الميلاد غير صحيح ولا يمكن أن يكون في المستقبل.";
+      }
     }
 
     if (!childForm.gender) {
@@ -386,6 +489,17 @@ function ChildrenPage() {
   };
 
   const handleSaveAndContinue = () => {
+    if (hasChildren === null) {
+      setPageError("يرجى الإجابة عن سؤال وجود الأبناء قبل المتابعة.");
+      return;
+    }
+
+    if (hasChildren === true && children.length === 0) {
+      setPageError("يرجى إضافة ابن أو ابنة واحدة على الأقل قبل المتابعة.");
+      return;
+    }
+
+    setPageError("");
     navigate("/family/special-cases");
   };
 
@@ -466,219 +580,274 @@ function ChildrenPage() {
             </div>
           )}
 
-          <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-base font-bold text-[#031632]">
-              الأبناء المضافون
-            </h2>
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-[#fafafe] p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-[#031632]">
+                  هل لديك أبناء أو بنات غير متزوجين؟
+                </h2>
 
-            <span className="w-fit rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
-              عدد الأبناء: {children.length}
-            </span>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  اختر نعم إذا كان لديك أبناء أو بنات غير متزوجين تريد إضافتهم
+                  إلى سجل الأسرة.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={savingHasChildren}
+                  onClick={() => handleHasChildrenChange(true)}
+                  className={`min-w-[90px] rounded-xl border px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    hasChildren === true
+                      ? "border-[#031632] bg-[#031632] text-white"
+                      : "border-slate-200 bg-white text-[#031632] hover:border-[#d8ad55]"
+                  }`}
+                >
+                  نعم
+                </button>
+
+                <button
+                  type="button"
+                  disabled={savingHasChildren}
+                  onClick={() => handleHasChildrenChange(false)}
+                  className={`min-w-[90px] rounded-xl border px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    hasChildren === false
+                      ? "border-[#031632] bg-[#031632] text-white"
+                      : "border-slate-200 bg-white text-[#031632] hover:border-[#d8ad55]"
+                  }`}
+                >
+                  لا
+                </button>
+              </div>
+            </div>
+
+            {hasChildren === null && (
+              <p className="mt-4 text-sm font-semibold text-amber-600">
+                يرجى الإجابة عن هذا السؤال للمتابعة.
+              </p>
+            )}
           </div>
 
-          {children.length === 0 ? (
-            <div className="flex min-h-[390px] flex-col items-center justify-center px-4 py-12 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#f1f3ff] text-slate-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  className="h-9 w-9"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.25 7.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0ZM20.25 7.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0ZM14.25 6a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"
-                  />
+          {hasChildren === true && (
+            <>
+              <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-base font-bold text-[#031632]">
+                  الأبناء المضافون
+                </h2>
 
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.25 20.25v-3a3.75 3.75 0 0 1 7.5 0v3M14.25 20.25v-3a3.75 3.75 0 0 1 7.5 0v3M8.25 20.25v-4.5a3.75 3.75 0 0 1 7.5 0v4.5"
-                  />
-                </svg>
+                <span className="w-fit rounded-full bg-[#eef3ff] px-3 py-1.5 text-xs font-semibold text-[#031632]">
+                  عدد الأبناء: {children.length}
+                </span>
               </div>
 
-              <h3 className="mt-5 text-base font-bold text-[#031632]">
-                لم تتم إضافة أي ابن أو ابنة حتى الآن.
-              </h3>
+              {children.length === 0 ? (
+                <div className="flex min-h-[390px] flex-col items-center justify-center px-4 py-12 text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#f1f3ff] text-slate-400">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      className="h-9 w-9"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8.25 7.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0ZM20.25 7.5a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0ZM14.25 6a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"
+                      />
 
-              <p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">
-                اضغط على الزر أدناه لإضافة بيانات ابن أو ابنة غير متزوجة. يمكنك
-                إضافة عدد غير محدود من الأبناء.
-              </p>
-
-              <button
-                type="button"
-                onClick={handleAddChild}
-                className="mt-6 inline-flex min-h-11 items-center justify-center gap-3 rounded-xl bg-[#031632] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-5 w-5 shrink-0"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 5v14m7-7H5"
-                  />
-                </svg>
-
-                <span>إضافة ابن أو ابنة</span>
-              </button>
-            </div>
-          ) : (
-            <div className="py-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                {children.map((child, index) => (
-                  <div
-                    key={child.id}
-                    className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
-                  >
-                    <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-                      <div>
-                        <span className="text-xs font-semibold text-[#d8ad55]">
-                          الابن أو الابنة {index + 1}
-                        </span>
-
-                        <h3 className="mt-1 text-base font-bold text-[#031632]">
-                          {child.fullName}
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleEditChild(child)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
-                          aria-label="تعديل بيانات الابن أو الابنة"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            className="h-4 w-4"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
-                            />
-                          </svg>
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={deletingChildId === child.id}
-                          onClick={() => handleDeleteChild(child.id)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label="حذف الابن أو الابنة"
-                        >
-                          {deletingChildId === child.id ? (
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              className="h-4 w-4"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
-                              />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <p className="text-xs text-slate-500">رقم الهوية</p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {child.nationalId}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">تاريخ الميلاد</p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {child.dateOfBirth}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">الجنس</p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {getGenderLabel(child.gender)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">
-                          الحالة التعليمية
-                        </p>
-
-                        <p className="mt-1 text-sm font-semibold text-[#031632]">
-                          {getEducationStatusLabel(child.educationStatus)}
-                        </p>
-                      </div>
-
-                      {child.institutionName && (
-                        <div className="sm:col-span-2">
-                          <p className="text-xs text-slate-500">
-                            {child.educationStatus === "school"
-                              ? "اسم المدرسة"
-                              : "اسم الجامعة"}
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-[#031632]">
-                            {child.institutionName}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 20.25v-3a3.75 3.75 0 0 1 7.5 0v3M14.25 20.25v-3a3.75 3.75 0 0 1 7.5 0v3M8.25 20.25v-4.5a3.75 3.75 0 0 1 7.5 0v4.5"
+                      />
+                    </svg>
                   </div>
-                ))}
-              </div>
 
-              <button
-                type="button"
-                onClick={handleAddChild}
-                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 5v14m7-7H5"
-                  />
-                </svg>
-                إضافة ابن أو ابنة أخرى
-              </button>
-            </div>
+                  <h3 className="mt-5 text-base font-bold text-[#031632]">
+                    لم تتم إضافة أي ابن أو ابنة حتى الآن.
+                  </h3>
+
+                  <p className="mt-2 max-w-lg text-sm leading-7 text-slate-500">
+                    اضغط على الزر أدناه لإضافة بيانات ابن أو ابنة غير متزوجة.
+                    يمكنك إضافة عدد غير محدود من الأبناء.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleAddChild}
+                    className="mt-6 inline-flex min-h-11 items-center justify-center gap-3 rounded-xl bg-[#031632] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-5 w-5 shrink-0"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 5v14m7-7H5"
+                      />
+                    </svg>
+
+                    <span>إضافة ابن أو ابنة</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="py-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {children.map((child, index) => (
+                      <div
+                        key={child.id}
+                        className="rounded-2xl border border-slate-200 bg-[#fafafe] p-5"
+                      >
+                        <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                          <div>
+                            <span className="text-xs font-semibold text-[#d8ad55]">
+                              الابن أو الابنة {index + 1}
+                            </span>
+
+                            <h3 className="mt-1 text-base font-bold text-[#031632]">
+                              {child.fullName}
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleEditChild(child)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#031632] transition hover:border-[#d8ad55] hover:bg-[#f5f3ed]"
+                              aria-label="تعديل بيانات الابن أو الابنة"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                className="h-4 w-4"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="m16.862 3.487 3.651 3.651M5.25 18.75l4.229-.94L19.572 7.717a1.5 1.5 0 0 0 0-2.121l-1.168-1.168a1.5 1.5 0 0 0-2.121 0L6.19 14.521l-.94 4.229Z"
+                                />
+                              </svg>
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={deletingChildId === child.id}
+                              onClick={() => handleDeleteChild(child.id)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              aria-label="حذف الابن أو الابنة"
+                            >
+                              {deletingChildId === child.id ? (
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-500" />
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  className="h-4 w-4"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4.5 7.5h15M9.75 10.5v6m4.5-6v6M6.75 7.5l.75 12h9l.75-12M9 7.5V4.875A1.125 1.125 0 0 1 10.125 3.75h3.75A1.125 1.125 0 0 1 15 4.875V7.5"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <p className="text-xs text-slate-500">رقم الهوية</p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {child.nationalId}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              تاريخ الميلاد
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {child.dateOfBirth}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">الجنس</p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {getGenderLabel(child.gender)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              الحالة التعليمية
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-[#031632]">
+                              {getEducationStatusLabel(child.educationStatus)}
+                            </p>
+                          </div>
+
+                          {child.institutionName && (
+                            <div className="sm:col-span-2">
+                              <p className="text-xs text-slate-500">
+                                {child.educationStatus === "school"
+                                  ? "اسم المدرسة"
+                                  : "اسم الجامعة"}
+                              </p>
+
+                              <p className="mt-1 text-sm font-semibold text-[#031632]">
+                                {child.institutionName}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddChild}
+                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-5 w-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 5v14m7-7H5"
+                      />
+                    </svg>
+                    إضافة ابن أو ابنة أخرى
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           <div className="mt-7 flex flex-col gap-5 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -828,6 +997,7 @@ function ChildrenPage() {
                     id="childDateOfBirth"
                     name="dateOfBirth"
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={childForm.dateOfBirth}
                     onChange={handleChildFormChange}
                     disabled={savingChild}

@@ -261,7 +261,8 @@ function LoginPage() {
                 تذكرني
               </label>
 
-              <button
+              {/*
+                <button
                 type="button"
                 disabled={loading}
                 onClick={() => navigate("/forgot-password")}
@@ -269,6 +270,7 @@ function LoginPage() {
               >
                 نسيت كلمة المرور؟
               </button>
+              */}
             </div>
 
             {error && (
@@ -309,9 +311,9 @@ function LoginPage() {
           </form>
 
           <div className="mt-6 border-t border-[#eadfc8] pt-5 text-center">
-            <p className="text-sm leading-6 text-slate-500">
+            {/*<p className="text-sm leading-6 text-slate-500">
               نسيت كلمة المرور؟ تواصل مع مسؤول النظام لإعادة تعيينها.
-            </p>
+            </p>*/}
 
             <button
               type="button"

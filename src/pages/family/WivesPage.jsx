@@ -145,6 +145,10 @@ function WivesPage() {
   }, []);
 
   const handleAddWife = () => {
+    if (wives.length >= 4) {
+      setPageError("لا يمكن إضافة أكثر من 4 زوجات.");
+      return;
+    }
     setModalError("");
     setEditingWifeId(null);
 
@@ -236,10 +240,19 @@ function WivesPage() {
 
     if (!wifeForm.dateOfBirth) {
       newErrors.dateOfBirth = "يرجى اختيار تاريخ الميلاد.";
+    } else {
+      const birthDate = new Date(`${wifeForm.dateOfBirth}T00:00:00`);
+      const today = new Date();
+
+      if (Number.isNaN(birthDate.getTime()) || birthDate > today) {
+        newErrors.dateOfBirth =
+          "تاريخ الميلاد غير صحيح ولا يمكن أن يكون في المستقبل.";
+      }
     }
 
-    if (!/^05\d{8}$/.test(wifeForm.phone)) {
-      newErrors.phone = "يرجى إدخال رقم جوال صحيح.";
+    if (!/^05[69]\d{7}$/.test(wifeForm.phone)) {
+      newErrors.phone =
+        "رقم الجوال يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام.";
     }
 
     if (!wifeForm.previousFamilyName.trim()) {
@@ -543,27 +556,33 @@ function WivesPage() {
                 زوجة واحدة.
               </p>
 
-              <button
-                type="button"
-                onClick={handleAddWife}
-                className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#031632] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020f23]"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-5 w-5"
+              {wives.length < 4 ? (
+                <button
+                  type="button"
+                  onClick={handleAddWife}
+                  className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#031632] bg-white px-6 text-sm font-semibold text-[#031632] transition hover:bg-[#f8f8fe]"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 5v14m7-7H5"
-                  />
-                </svg>
-                إضافة زوجة
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-5 w-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 5v14m7-7H5"
+                    />
+                  </svg>
+                  إضافة زوجة أخرى
+                </button>
+              ) : (
+                <p className="mt-5 text-sm font-semibold text-slate-500">
+                  تم الوصول إلى الحد الأقصى المسموح: 4 زوجات.
+                </p>
+              )}
             </div>
           ) : (
             <div className="py-6">
@@ -854,6 +873,7 @@ function WivesPage() {
                     id="wifeDateOfBirth"
                     name="dateOfBirth"
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={wifeForm.dateOfBirth}
                     onChange={handleWifeFormChange}
                     disabled={savingWife}

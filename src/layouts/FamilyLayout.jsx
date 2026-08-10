@@ -178,7 +178,7 @@ function FamilyLayout() {
     getCompletionSection("personal_photo")?.completed,
   );
 
-  const basicInfoCompleted = familyHeadCompleted && personalPhotoCompleted;
+  const basicInfoCompleted = familyHeadCompleted;
 
   const wivesSection = getCompletionSection("wives");
 

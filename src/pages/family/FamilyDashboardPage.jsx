@@ -152,13 +152,59 @@ function FamilyDashboardPage() {
     getCompletionSection("children")?.completed,
   );
 
-  const basicInfoCompleted = familyHeadCompleted && photoCompleted;
+  const hasChildren = family?.has_children;
+
+  const childrenStatus =
+    hasChildren === false
+      ? "لا يوجد أبناء"
+      : hasChildren === true
+        ? childrenCompleted
+          ? "مكتمل"
+          : "غير مكتمل"
+        : "لم يبدأ";
+
+  const childrenState =
+    hasChildren === false || childrenCompleted ? "completed" : "incomplete";
+
+  const basicInfoCompleted = familyHeadCompleted;
 
   const wivesCompleted = Boolean(wivesSection?.completed);
 
   const specialCasesCount = familyData?.special_cases?.length || 0;
 
+  const hasSpecialCases = family?.has_special_cases;
+
+  const specialCasesStatus =
+    hasSpecialCases === false
+      ? "لا توجد حالات خاصة"
+      : hasSpecialCases === true
+        ? specialCasesCount > 0
+          ? "مكتمل"
+          : "غير مكتمل"
+        : "لم يبدأ";
+
+  const specialCasesState =
+    hasSpecialCases === false || specialCasesCount > 0
+      ? "completed"
+      : "incomplete";
+
   const marriedDaughtersCount = familyData?.married_daughters?.length || 0;
+
+  const hasMarriedDaughters = family?.has_married_daughters;
+
+  const marriedDaughtersStatus =
+    hasMarriedDaughters === false
+      ? "لا توجد بنات متزوجات"
+      : hasMarriedDaughters === true
+        ? marriedDaughtersCount > 0
+          ? "مكتمل"
+          : "غير مكتمل"
+        : "لم يبدأ";
+
+  const marriedDaughtersState =
+    hasMarriedDaughters === false || marriedDaughtersCount > 0
+      ? "completed"
+      : "incomplete";
 
   const reviewCompleted = ["submitted", "approved"].includes(
     editingStatus?.form_status ||
@@ -170,9 +216,9 @@ function FamilyDashboardPage() {
     basicInfoCompleted,
     wivesCompleted,
     housingCompleted,
-    childrenCompleted,
-    specialCasesCount > 0,
-    marriedDaughtersCount > 0,
+    hasChildren === false || childrenCompleted,
+    hasSpecialCases === false || specialCasesCount > 0,
+    hasMarriedDaughters === false || marriedDaughtersCount > 0,
     reviewCompleted,
   ].filter(Boolean).length;
 
@@ -268,9 +314,12 @@ function FamilyDashboardPage() {
 
       {
         title: "الأبناء",
-        description: "إضافة بيانات الأبناء",
-        status: childrenCompleted ? "مكتمل" : "لم يبدأ",
-        state: childrenCompleted ? "completed" : "incomplete",
+        description:
+          hasChildren === false
+            ? "تم التأكيد أنه لا يوجد أبناء"
+            : "إضافة بيانات الأبناء",
+        status: childrenStatus,
+        state: childrenState,
         path: "/family/children",
         icon: (
           <svg
@@ -292,9 +341,12 @@ function FamilyDashboardPage() {
 
       {
         title: "الحالات الخاصة",
-        description: "بيانات المرضى والجرحى وذوي الإعاقة والشهداء",
-        status: specialCasesCount > 0 ? "مكتمل" : "لم يبدأ",
-        state: specialCasesCount > 0 ? "completed" : "incomplete",
+        description:
+          hasSpecialCases === false
+            ? "تم التأكيد أنه لا توجد حالات خاصة"
+            : "بيانات المرضى والجرحى وذوي الإعاقة والشهداء",
+        status: specialCasesStatus,
+        state: specialCasesState,
         path: "/family/special-cases",
         icon: (
           <svg
@@ -321,9 +373,12 @@ function FamilyDashboardPage() {
 
       {
         title: "البنات المتزوجات",
-        description: "بيانات البنات المتزوجات وأزواجهن",
-        status: marriedDaughtersCount > 0 ? "مكتمل" : "لم يبدأ",
-        state: marriedDaughtersCount > 0 ? "completed" : "incomplete",
+        description:
+          hasMarriedDaughters === false
+            ? "تم التأكيد أنه لا توجد بنات متزوجات"
+            : "إضافة بيانات البنات المتزوجات",
+        status: marriedDaughtersStatus,
+        state: marriedDaughtersState,
         path: "/family/married-daughters",
         icon: (
           <svg
@@ -352,9 +407,18 @@ function FamilyDashboardPage() {
       basicInfoCompleted,
       wivesCompleted,
       housingCompleted,
-      childrenCompleted,
+      hasChildren === false || childrenCompleted,
+      hasChildren,
+      childrenStatus,
+      childrenState,
       specialCasesCount,
+      hasSpecialCases,
+      specialCasesStatus,
+      specialCasesState,
       marriedDaughtersCount,
+      hasMarriedDaughters,
+      marriedDaughtersStatus,
+      marriedDaughtersState,
     ],
   );
 
