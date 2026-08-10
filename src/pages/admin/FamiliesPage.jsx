@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import DeleteFamilyModal from "./DeleteFamilyModal";
 import AddFamilyModal from "./AddFamilyModal";
 import EditFamilyModal from "./EditFamilyModal";
-
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../../config/api";
 
 const maritalStatusLabels = {
   single: "أعزب",

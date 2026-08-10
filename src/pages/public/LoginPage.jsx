@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { API_BASE_URL } from "../../config/api";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -27,75 +28,75 @@ function LoginPage() {
     }
   };
 
-    const handleSubmit = async (event) => {
-      event.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setError("");
 
-      try {
-        const response = await fetch("http://localhost:5000/api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            national_id: form.nationalId.trim(),
-            password: form.password,
-          }),
-        });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          national_id: form.nationalId.trim(),
+          password: form.password,
+        }),
+      });
 
-        const data = await response.json().catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-          throw new Error(
-            data.message || data.error || "رقم الهوية أو كلمة المرور غير صحيحة",
-          );
-        }
-
-        const token = data.token || data.data?.token;
-        const user = data.user || data.data?.user || {};
-
-        if (!token) {
-          throw new Error("لم يتم استلام رمز تسجيل الدخول من الخادم");
-        }
-
-        localStorage.removeItem("token");
-        sessionStorage.removeItem("token");
-
-        if (form.rememberMe) {
-          localStorage.setItem("token", token);
-        } else {
-          sessionStorage.setItem("token", token);
-        }
-
-        localStorage.setItem("user", JSON.stringify(user));
-
-        const roles = Array.isArray(user.roles) ? user.roles : [];
-
-        if (roles.includes("admin")) {
-          navigate("/admin");
-          return;
-        }
-
-        if (roles.includes("family_head")) {
-          navigate("/family");
-          return;
-        }
-
-        setError("لا توجد صلاحية دخول صالحة لهذا الحساب.");
-      } catch (requestError) {
-        if (requestError instanceof TypeError) {
-          setError(
-            "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
-          );
-        } else {
-          setError(requestError.message || "حدث خطأ أثناء تسجيل الدخول");
-        }
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(
+          data.message || data.error || "رقم الهوية أو كلمة المرور غير صحيحة",
+        );
       }
-    };
+
+      const token = data.token || data.data?.token;
+      const user = data.user || data.data?.user || {};
+
+      if (!token) {
+        throw new Error("لم يتم استلام رمز تسجيل الدخول من الخادم");
+      }
+
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+
+      if (form.rememberMe) {
+        localStorage.setItem("token", token);
+      } else {
+        sessionStorage.setItem("token", token);
+      }
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      const roles = Array.isArray(user.roles) ? user.roles : [];
+
+      if (roles.includes("admin")) {
+        navigate("/admin");
+        return;
+      }
+
+      if (roles.includes("family_head")) {
+        navigate("/family");
+        return;
+      }
+
+      setError("لا توجد صلاحية دخول صالحة لهذا الحساب.");
+    } catch (requestError) {
+      if (requestError instanceof TypeError) {
+        setError(
+          "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
+        );
+      } else {
+        setError(requestError.message || "حدث خطأ أثناء تسجيل الدخول");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <section className="relative min-h-[calc(100vh-76px)] overflow-hidden bg-[#fffaf2]">

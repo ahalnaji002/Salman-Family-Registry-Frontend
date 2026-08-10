@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { API_BASE_URL } from "../../config/api";
 
 const RESPONSIBLE_NAME = "أحمد مسعود";
 const WHATSAPP_NUMBER = "972594762842";
@@ -62,13 +63,13 @@ function FamilyDashboardPage() {
 
         const [familyResponse, completionResponse, editingResponse] =
           await Promise.all([
-            fetch("http://localhost:5000/api/family", {
+            fetch(`${API_BASE_URL}/api/family`, {
               headers,
             }),
-            fetch("http://localhost:5000/api/family/completion", {
+            fetch(`${API_BASE_URL}/api/family/completion`, {
               headers,
             }),
-            fetch("http://localhost:5000/api/family/editing-status", {
+            fetch(`${API_BASE_URL}/api/family/editing-status`, {
               headers,
             }),
           ]);

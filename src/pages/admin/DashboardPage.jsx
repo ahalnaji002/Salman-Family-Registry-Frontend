@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import AddSupervisorModal from "./AddSupervisorModal";
 import EditSupervisorModal from "./EditSupervisorModal";
-
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../../config/api";
 
 const initialSupervisors = [
   {

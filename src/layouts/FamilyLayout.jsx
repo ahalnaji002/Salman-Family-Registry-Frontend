@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 
 import logo from "../assets/images/salman-family-logo.png";
+import { API_BASE_URL } from "../config/api";
 
 const formSteps = [
   {
@@ -99,10 +100,10 @@ function FamilyLayout() {
       };
 
       const [familyResponse, completionResponse] = await Promise.all([
-        fetch("http://localhost:5000/api/family", {
+        fetch(`${API_BASE_URL}/api/family`, {
           headers,
         }),
-        fetch("http://localhost:5000/api/family/completion", {
+        fetch(`${API_BASE_URL}/api/family/completion`, {
           headers,
         }),
       ]);

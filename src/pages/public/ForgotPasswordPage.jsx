@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { API_BASE_URL } from "../../config/api";
 
 function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -33,25 +34,20 @@ function ForgotPasswordPage() {
     setSuccess("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/forgot-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            national_id: nationalId.trim(),
-          }),
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          national_id: nationalId.trim(),
+        }),
+      });
 
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "تعذر إرسال طلب استعادة كلمة المرور.",
-        );
+        throw new Error(data.message || "تعذر إرسال طلب استعادة كلمة المرور.");
       }
 
       const responseData = data.data || {};
@@ -69,8 +65,7 @@ function ForgotPasswordPage() {
         );
       } else {
         setError(
-          requestError.message ||
-            "حدث خطأ أثناء طلب استعادة كلمة المرور.",
+          requestError.message || "حدث خطأ أثناء طلب استعادة كلمة المرور.",
         );
       }
     } finally {
@@ -87,7 +82,7 @@ function ForgotPasswordPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/verify-reset-code",
+        `${API_BASE_URL}/api/auth/verify-reset-code`,
         {
           method: "POST",
           headers: {
@@ -103,9 +98,7 @@ function ForgotPasswordPage() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "رمز التحقق غير صحيح.",
-        );
+        throw new Error(data.message || "رمز التحقق غير صحيح.");
       }
 
       const responseData = data.data || {};
@@ -123,10 +116,7 @@ function ForgotPasswordPage() {
           "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
         );
       } else {
-        setError(
-          requestError.message ||
-            "حدث خطأ أثناء التحقق من الرمز.",
-        );
+        setError(requestError.message || "حدث خطأ أثناء التحقق من الرمز.");
       }
     } finally {
       setLoading(false);
@@ -152,33 +142,26 @@ function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/reset-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reset_token: resetToken,
-            new_password: newPassword,
-            new_password_confirmation: confirmPassword,
-          }),
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          reset_token: resetToken,
+          new_password: newPassword,
+          new_password_confirmation: confirmPassword,
+        }),
+      });
 
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "تعذر إعادة تعيين كلمة المرور.",
-        );
+        throw new Error(data.message || "تعذر إعادة تعيين كلمة المرور.");
       }
 
       setStep(4);
-      setSuccess(
-        data.message || "تمت إعادة تعيين كلمة المرور بنجاح.",
-      );
+      setSuccess(data.message || "تمت إعادة تعيين كلمة المرور بنجاح.");
     } catch (requestError) {
       if (requestError instanceof TypeError) {
         setError(
@@ -186,8 +169,7 @@ function ForgotPasswordPage() {
         );
       } else {
         setError(
-          requestError.message ||
-            "حدث خطأ أثناء إعادة تعيين كلمة المرور.",
+          requestError.message || "حدث خطأ أثناء إعادة تعيين كلمة المرور.",
         );
       }
     } finally {
@@ -241,9 +223,7 @@ function ForgotPasswordPage() {
                 <div
                   key={item}
                   className={`h-2 flex-1 rounded-full ${
-                    item <= step
-                      ? "bg-[#c99b45]"
-                      : "bg-[#eee5d5]"
+                    item <= step ? "bg-[#c99b45]" : "bg-[#eee5d5]"
                   }`}
                 />
               ))}
@@ -266,10 +246,7 @@ function ForgotPasswordPage() {
           )}
 
           {step === 1 && (
-            <form
-              onSubmit={handleForgotPassword}
-              className="mt-7 space-y-5"
-            >
+            <form onSubmit={handleForgotPassword} className="mt-7 space-y-5">
               <div>
                 <label
                   htmlFor="forgotNationalId"
@@ -300,24 +277,17 @@ function ForgotPasswordPage() {
                 disabled={loading}
                 className="w-full rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white transition hover:bg-[#142947] disabled:opacity-60"
               >
-                {loading
-                  ? "جاري إرسال الطلب..."
-                  : "متابعة"}
+                {loading ? "جاري إرسال الطلب..." : "متابعة"}
               </button>
             </form>
           )}
 
           {step === 2 && (
-            <form
-              onSubmit={handleVerifyCode}
-              className="mt-7 space-y-5"
-            >
+            <form onSubmit={handleVerifyCode} className="mt-7 space-y-5">
               {phone && (
                 <p className="text-center text-sm leading-7 text-slate-600">
                   تم إنشاء رمز التحقق للحساب المرتبط بالرقم
-                  <span className="mr-1 font-bold text-[#031632]">
-                    {phone}
-                  </span>
+                  <span className="mr-1 font-bold text-[#031632]">{phone}</span>
                 </p>
               )}
 
@@ -347,9 +317,7 @@ function ForgotPasswordPage() {
                   inputMode="numeric"
                   value={code}
                   onChange={(event) => {
-                    setCode(
-                      event.target.value.replace(/\D/g, ""),
-                    );
+                    setCode(event.target.value.replace(/\D/g, ""));
                     setError("");
                   }}
                   required
@@ -365,9 +333,7 @@ function ForgotPasswordPage() {
                 disabled={loading}
                 className="w-full rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white transition hover:bg-[#142947] disabled:opacity-60"
               >
-                {loading
-                  ? "جاري التحقق..."
-                  : "تحقق من الرمز"}
+                {loading ? "جاري التحقق..." : "تحقق من الرمز"}
               </button>
 
               <button
@@ -387,10 +353,7 @@ function ForgotPasswordPage() {
           )}
 
           {step === 3 && (
-            <form
-              onSubmit={handleResetPassword}
-              className="mt-7 space-y-5"
-            >
+            <form onSubmit={handleResetPassword} className="mt-7 space-y-5">
               <div>
                 <label
                   htmlFor="newPassword"
@@ -417,9 +380,7 @@ function ForgotPasswordPage() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowPassword((current) => !current)
-                    }
+                    onClick={() => setShowPassword((current) => !current)}
                     className="absolute inset-y-0 left-3 text-sm font-semibold text-slate-500"
                   >
                     {showPassword ? "إخفاء" : "إظهار"}
@@ -438,11 +399,7 @@ function ForgotPasswordPage() {
                 <div className="relative">
                   <input
                     id="confirmNewPassword"
-                    type={
-                      showConfirmPassword
-                        ? "text"
-                        : "password"
-                    }
+                    type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(event) => {
                       setConfirmPassword(event.target.value);
@@ -458,15 +415,11 @@ function ForgotPasswordPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      setShowConfirmPassword(
-                        (current) => !current,
-                      )
+                      setShowConfirmPassword((current) => !current)
                     }
                     className="absolute inset-y-0 left-3 text-sm font-semibold text-slate-500"
                   >
-                    {showConfirmPassword
-                      ? "إخفاء"
-                      : "إظهار"}
+                    {showConfirmPassword ? "إخفاء" : "إظهار"}
                   </button>
                 </div>
               </div>
@@ -480,9 +433,7 @@ function ForgotPasswordPage() {
                 disabled={loading}
                 className="w-full rounded-xl bg-[#031632] px-5 py-3.5 font-semibold text-white transition hover:bg-[#142947] disabled:opacity-60"
               >
-                {loading
-                  ? "جاري تغيير كلمة المرور..."
-                  : "تغيير كلمة المرور"}
+                {loading ? "جاري تغيير كلمة المرور..." : "تغيير كلمة المرور"}
               </button>
             </form>
           )}
@@ -510,8 +461,7 @@ function ForgotPasswordPage() {
               </h2>
 
               <p className="mt-2 text-sm leading-7 text-slate-500">
-                يمكنك الآن تسجيل الدخول باستخدام كلمة المرور
-                الجديدة.
+                يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.
               </p>
 
               <button

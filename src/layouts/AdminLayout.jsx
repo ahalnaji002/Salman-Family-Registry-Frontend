@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import logo from "../assets/images/salman-family-logo.png";
-
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../config/api";
 
 const navigationItems = [
   {

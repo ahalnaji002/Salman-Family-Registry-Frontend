@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { API_BASE_URL } from "../../config/api";
 
 function HomePage() {
   const navigate = useNavigate();
@@ -34,27 +35,22 @@ function HomePage() {
     setError("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            national_id: form.nationalId.trim(),
-            password: form.password,
-          }),
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          national_id: form.nationalId.trim(),
+          password: form.password,
+        }),
+      });
 
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            data.error ||
-            "رقم الهوية أو كلمة المرور غير صحيحة",
+          data.message || data.error || "رقم الهوية أو كلمة المرور غير صحيحة",
         );
       }
 
@@ -83,9 +79,7 @@ function HomePage() {
           "تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل على المنفذ 5000.",
         );
       } else {
-        setError(
-          requestError.message || "حدث خطأ أثناء تسجيل الدخول",
-        );
+        setError(requestError.message || "حدث خطأ أثناء تسجيل الدخول");
       }
     } finally {
       setLoading(false);
@@ -125,22 +119,19 @@ function HomePage() {
                 strokeLinejoin="round"
               />
             </svg>
-
             بوابة إلكترونية آمنة
           </span>
 
           <h2 className="mt-7 max-w-2xl text-4xl font-extrabold leading-[1.35] text-[#031632] md:text-5xl">
             مرحبًا بكم في نظام
-            <span className="block text-[#c99b45]">
-              حصر وتحديث بيانات
-            </span>
+            <span className="block text-[#c99b45]">حصر وتحديث بيانات</span>
             <span className="block">عائلة سلمان</span>
           </h2>
 
           <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-            منصة رقمية مخصصة لحفظ ترابط العائلة وتسهيل التواصل بين أفرادها.
-            بادر بتحديث بياناتك لتكون جزءًا من السجل العائلي الموثوق، في بيئة
-            آمنة تضمن خصوصية معلوماتك.
+            منصة رقمية مخصصة لحفظ ترابط العائلة وتسهيل التواصل بين أفرادها. بادر
+            بتحديث بياناتك لتكون جزءًا من السجل العائلي الموثوق، في بيئة آمنة
+            تضمن خصوصية معلوماتك.
           </p>
 
           <button
@@ -149,7 +140,6 @@ function HomePage() {
             className="mt-8 inline-flex items-center gap-3 rounded-xl bg-[#031632] px-7 py-3.5 font-semibold text-white shadow-lg transition hover:bg-[#142947]"
           >
             بدء التسجيل
-
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -245,13 +235,9 @@ function HomePage() {
                       type="button"
                       disabled={loading}
                       aria-label={
-                        showPassword
-                          ? "إخفاء كلمة المرور"
-                          : "إظهار كلمة المرور"
+                        showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"
                       }
-                      onClick={() =>
-                        setShowPassword((current) => !current)
-                      }
+                      onClick={() => setShowPassword((current) => !current)}
                       className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {showPassword ? (
@@ -298,12 +284,12 @@ function HomePage() {
                   </label>
 
                   <button
-  type="button"
-  onClick={() => navigate("/forgot-password")}
-  className="font-semibold text-[#031632] hover:underline"
->
-  نسيت كلمة المرور؟
-</button>
+                    type="button"
+                    onClick={() => navigate("/forgot-password")}
+                    className="font-semibold text-[#031632] hover:underline"
+                  >
+                    نسيت كلمة المرور؟
+                  </button>
                 </div>
 
                 {error && (
@@ -333,7 +319,6 @@ function HomePage() {
 
               <div className="mt-6 border-t border-[#eadfc8] pt-5 text-center text-sm text-slate-500">
                 ليس لديك حساب؟
-
                 <button
                   type="button"
                   onClick={() => navigate("/register")}

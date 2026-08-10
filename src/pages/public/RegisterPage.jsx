@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { API_BASE_URL } from "../../config/api";
 
 const initialForm = {
   fullName: "",
@@ -61,29 +62,24 @@ function RegisterPage() {
     setErrorMessage("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            full_name: fullName,
-            national_id: form.nationalId.trim(),
-            phone: form.phone.trim(),
-            password: form.password,
-          }),
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          full_name: fullName,
+          national_id: form.nationalId.trim(),
+          phone: form.phone.trim(),
+          password: form.password,
+        }),
+      });
 
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            data.error ||
-            "تعذر إنشاء الحساب، حاول مرة أخرى.",
+          data.message || data.error || "تعذر إنشاء الحساب، حاول مرة أخرى.",
         );
       }
 
@@ -105,9 +101,7 @@ function RegisterPage() {
           "تعذر الاتصال بالخادم. تأكد أن الـBackend يعمل على المنفذ 5000.",
         );
       } else {
-        setErrorMessage(
-          requestError.message || "حدث خطأ أثناء إنشاء الحساب.",
-        );
+        setErrorMessage(requestError.message || "حدث خطأ أثناء إنشاء الحساب.");
       }
     } finally {
       setLoading(false);
@@ -336,9 +330,7 @@ function RegisterPage() {
                       ? "إخفاء تأكيد كلمة المرور"
                       : "إظهار تأكيد كلمة المرور"
                   }
-                  onClick={() =>
-                    setShowConfirmPassword((current) => !current)
-                  }
+                  onClick={() => setShowConfirmPassword((current) => !current)}
                   className="absolute inset-y-0 left-3 flex items-center text-slate-500 transition hover:text-[#031632] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {showConfirmPassword ? "إخفاء" : "إظهار"}
@@ -393,7 +385,6 @@ function RegisterPage() {
 
           <div className="mt-6 border-t border-[#eadfc8] pt-5 text-center text-sm text-slate-500">
             لديك حساب بالفعل؟
-
             <Link
               to="/login"
               className="mr-2 font-bold text-[#031632] hover:underline"
