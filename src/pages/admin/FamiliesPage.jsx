@@ -120,6 +120,8 @@ function FamiliesPage() {
   const [regionFilter, setRegionFilter] = useState("الكل");
   const [statusFilter, setStatusFilter] = useState("الكل");
 
+  const [viewMode, setViewMode] = useState("active");
+
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -212,6 +214,12 @@ function FamiliesPage() {
     editStatus: family.editing_enabled ? "open" : "closed",
     editingEnabled: Boolean(family.editing_enabled),
     userIsActive: Boolean(family.user_is_active),
+
+    deletedAt: family.deleted_at
+      ? String(family.deleted_at).slice(0, 10)
+      : null,
+
+    deletedBy: family.deleted_by || null,
   });
 
   const normalizeFamilyDetails = (data) => {
@@ -393,6 +401,10 @@ function FamiliesPage() {
       query.set("page", String(requestedPage));
       query.set("limit", "10");
 
+      if (viewMode === "deleted") {
+        query.set("deleted", "true");
+      }
+
       if (searchTerm.trim()) {
         query.set("search", searchTerm.trim());
       }
@@ -431,7 +443,10 @@ function FamiliesPage() {
 
       setSelectedFamilyId(nextSelectedId);
 
-      if (nextSelectedId) {
+      if (viewMode === "deleted") {
+        setSelectedFamilyId(null);
+        setSelectedFamily(null);
+      } else if (nextSelectedId) {
         await loadFamilyDetails(nextSelectedId);
       } else {
         setSelectedFamily(null);
@@ -456,7 +471,7 @@ function FamiliesPage() {
     }, 350);
 
     return () => window.clearTimeout(delay);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, viewMode]);
 
   const filteredFamilies = useMemo(() => {
     if (regionFilter === "الكل") {
@@ -564,6 +579,28 @@ function FamiliesPage() {
       });
     } catch (error) {
       setErrorMessage(error.message || "حدث خطأ أثناء حذف الأسرة.");
+    } finally {
+      setActionFamilyId(null);
+    }
+  };
+
+  const handleRestoreFamily = async (familyId) => {
+    clearMessages();
+    setActionFamilyId(familyId);
+
+    try {
+      const data = await apiRequest(`/api/admin/families/${familyId}/restore`, {
+        method: "PATCH",
+      });
+
+      setSuccessMessage(data.message || "تمت استعادة الأسرة بنجاح.");
+
+      await loadFamilies({
+        requestedPage: page,
+        preserveSelectedId: null,
+      });
+    } catch (error) {
+      setErrorMessage(error.message || "حدث خطأ أثناء استعادة الأسرة.");
     } finally {
       setActionFamilyId(null);
     }
@@ -716,33 +753,64 @@ function FamiliesPage() {
 
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
-          <h1 className="text-2xl font-bold text-[#031632]">الأسر المسجلة</h1>
-
+          <h1 className="text-2xl font-bold text-[#031632]">
+            {viewMode === "deleted" ? "الأسر المحذوفة" : "الأسر المسجلة"}
+          </h1>
           <p className="mt-2 text-slate-500">
-            إدارة والبحث في سجلات الأسر المسجلة في النظام
+            {viewMode === "deleted"
+              ? "عرض وإدارة الأسر المحذوفة من النظام"
+              : "الإدارة والبحث في سجلات الأسر المسجلة في النظام"}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            clearMessages();
-            setIsAddFamilyOpen(true);
-          }}
-          className="flex w-fit items-center gap-2 rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white transition hover:bg-[#1a2b48]"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            className="h-5 w-5"
-            aria-hidden="true"
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setViewMode("active")}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+              viewMode === "active"
+                ? "bg-[#031632] text-white"
+                : "border border-slate-200 bg-white text-[#031632]"
+            }`}
           >
-            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-          </svg>
-          إضافة أسرة
-        </button>
+            الأسر المسجلة
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("deleted")}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+              viewMode === "deleted"
+                ? "bg-[#031632] text-white"
+                : "border border-slate-200 bg-white text-[#031632]"
+            }`}
+          >
+            الأسر المحذوفة
+          </button>
+        </div>
+
+        {viewMode === "active" && (
+          <button
+            type="button"
+            onClick={() => {
+              clearMessages();
+              setIsAddFamilyOpen(true);
+            }}
+            className="flex w-fit items-center gap-2 rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white transition hover:bg-[#1a2b48]"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            إضافة أسرة
+          </button>
+        )}
       </div>
 
       <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -834,7 +902,9 @@ function FamiliesPage() {
                 <th className="px-3 py-3">المنطقة</th>
                 <th className="px-3 py-3">عدد الأفراد</th>
                 <th className="px-3 py-3">الحالة</th>
-                <th className="px-3 py-3">تاريخ التسجيل</th>
+                <th className="px-3 py-3">
+                  {viewMode === "deleted" ? "تاريخ الحذف" : "تاريخ التسجيل"}
+                </th>{" "}
                 <th className="px-3 py-3">إجراءات</th>
               </tr>
             </thead>
@@ -855,7 +925,9 @@ function FamiliesPage() {
                     colSpan={8}
                     className="px-4 py-12 text-center text-slate-500"
                   >
-                    لا توجد أسر مطابقة.
+                    {viewMode === "deleted"
+                      ? "لا توجد أسر محذوفة."
+                      : "لا توجد أسر مطابقة."}{" "}
                   </td>
                 </tr>
               ) : (
@@ -914,110 +986,127 @@ function FamiliesPage() {
                     </td>
 
                     <td className="px-3 py-4 text-slate-600">
-                      {family.registeredAt}
+                      {viewMode === "deleted"
+                        ? family.deletedAt || "—"
+                        : family.registeredAt}
                     </td>
 
                     <td className="px-3 py-4">
                       <div className="flex items-center gap-2">
-                        <IconButton
-                          label="عرض التفاصيل"
-                          onClick={() => handleSelectFamily(family.id)}
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            className="h-5 w-5"
-                            aria-hidden="true"
+                        {viewMode === "deleted" ? (
+                          <button
+                            type="button"
+                            disabled={actionFamilyId === family.id}
+                            onClick={() => handleRestoreFamily(family.id)}
+                            className="rounded-lg border border-green-200 px-3 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                            <circle cx="12" cy="12" r="2.5" />
-                          </svg>
-                        </IconButton>
-
-                        <IconButton
-                          label="تعديل الأسرة"
-                          onClick={() => handleOpenEditFamily(family)}
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            className="h-5 w-5"
-                            aria-hidden="true"
-                          >
-                            <path d="M12 20h9" strokeLinecap="round" />
-                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-                          </svg>
-                        </IconButton>
-
-                        <IconButton
-                          label={
-                            family.editStatus === "open"
-                              ? "إغلاق التعديل"
-                              : "إعادة فتح التعديل"
-                          }
-                          disabled={actionFamilyId === family.id}
-                          onClick={() => handleToggleEditStatus(family)}
-                        >
-                          {family.editStatus === "open" ? (
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              className="h-4 w-4"
-                              aria-hidden="true"
+                            {actionFamilyId === family.id
+                              ? "جاري الاسترجاع..."
+                              : "استرجاع"}
+                          </button>
+                        ) : (
+                          <>
+                            <IconButton
+                              label="عرض التفاصيل"
+                              onClick={() => handleSelectFamily(family.id)}
                             >
-                              <rect
-                                x="5"
-                                y="10"
-                                width="14"
-                                height="10"
-                                rx="2"
-                              />
-                              <path d="M9 10V7a4 4 0 0 1 7.5-2" />
-                            </svg>
-                          ) : (
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            >
-                              <rect
-                                x="5"
-                                y="10"
-                                width="14"
-                                height="10"
-                                rx="2"
-                              />
-                              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                            </svg>
-                          )}
-                        </IconButton>
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                className="h-5 w-5"
+                                aria-hidden="true"
+                              >
+                                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                                <circle cx="12" cy="12" r="2.5" />
+                              </svg>
+                            </IconButton>
 
-                        <IconButton
-                          label="حذف الأسرة"
-                          danger
-                          disabled={actionFamilyId === family.id}
-                          onClick={() => handleOpenDeleteFamily(family)}
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          >
-                            <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" />
-                          </svg>
-                        </IconButton>
+                            <IconButton
+                              label="تعديل الأسرة"
+                              onClick={() => handleOpenEditFamily(family)}
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                className="h-5 w-5"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 20h9" strokeLinecap="round" />
+                                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                              </svg>
+                            </IconButton>
+
+                            <IconButton
+                              label={
+                                family.editStatus === "open"
+                                  ? "إغلاق التعديل"
+                                  : "إعادة فتح التعديل"
+                              }
+                              disabled={actionFamilyId === family.id}
+                              onClick={() => handleToggleEditStatus(family)}
+                            >
+                              {family.editStatus === "open" ? (
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <rect
+                                    x="5"
+                                    y="10"
+                                    width="14"
+                                    height="10"
+                                    rx="2"
+                                  />
+                                  <path d="M9 10V7a4 4 0 0 1 7.5-2" />
+                                </svg>
+                              ) : (
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                >
+                                  <rect
+                                    x="5"
+                                    y="10"
+                                    width="14"
+                                    height="10"
+                                    rx="2"
+                                  />
+                                  <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                                </svg>
+                              )}
+                            </IconButton>
+
+                            <IconButton
+                              label="حذف الأسرة"
+                              danger
+                              disabled={actionFamilyId === family.id}
+                              onClick={() => handleOpenDeleteFamily(family)}
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              >
+                                <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" />
+                              </svg>
+                            </IconButton>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1054,333 +1143,361 @@ function FamiliesPage() {
         </div>
       </article>
 
-      <div className="flex items-center gap-4">
-        <div className="h-px flex-1 bg-slate-200" />
+      {viewMode === "active" && (
+        <>
+          <div className="flex items-center gap-4">
+            <div className="h-px flex-1 bg-slate-200" />
 
-        <h2 className="text-lg font-semibold text-slate-500">
-          تفاصيل العائلة المحددة
-        </h2>
+            <h2 className="text-lg font-semibold text-slate-500">
+              تفاصيل العائلة المحددة
+            </h2>
 
-        <div className="h-px flex-1 bg-slate-200" />
-      </div>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
 
-      {detailsLoading ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center text-slate-500 shadow-sm">
-          جاري تحميل تفاصيل الأسرة...
-        </div>
-      ) : !selectedFamily ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center text-slate-500 shadow-sm">
-          اختر أسرة لعرض تفاصيلها.
-        </div>
-      ) : (
-        <section className="space-y-5">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div className="flex items-center gap-4">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#031632] text-lg font-bold text-white">
-                {selectedFamily.headName
-                  .split(" ")
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((word) => word[0])
-                  .join("") || "—"}
-              </span>
-
-              <div>
-                <p className="text-sm text-slate-500">أسرة:</p>
-
-                <h2 className="text-2xl font-bold text-[#031632]">
-                  {selectedFamily.headName}
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  رقم هوية رب الأسرة: {selectedFamily.nationalId}
-                </p>
-
-                <p className="mt-1 text-sm">
-                  حالة التعديل:
-                  <span
-                    className={`mr-2 font-semibold ${
-                      selectedFamily.editStatus === "open"
-                        ? "text-green-700"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {selectedFamily.editStatus === "open" ? "مفتوح" : "مغلق"}
+          {detailsLoading ? (
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center text-slate-500 shadow-sm">
+              جاري تحميل تفاصيل الأسرة...
+            </div>
+          ) : !selectedFamily ? (
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center text-slate-500 shadow-sm">
+              اختر أسرة لعرض تفاصيلها.
+            </div>
+          ) : (
+            <section className="space-y-5">
+              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div className="flex items-center gap-4">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#031632] text-lg font-bold text-white">
+                    {selectedFamily.headName
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((word) => word[0])
+                      .join("") || "—"}
                   </span>
-                </p>
+
+                  <div>
+                    <p className="text-sm text-slate-500">أسرة:</p>
+
+                    <h2 className="text-2xl font-bold text-[#031632]">
+                      {selectedFamily.headName}
+                    </h2>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      رقم هوية رب الأسرة: {selectedFamily.nationalId}
+                    </p>
+
+                    <p className="mt-1 text-sm">
+                      حالة التعديل:
+                      <span
+                        className={`mr-2 font-semibold ${
+                          selectedFamily.editStatus === "open"
+                            ? "text-green-700"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {selectedFamily.editStatus === "open"
+                          ? "مفتوح"
+                          : "مغلق"}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditFamily(selectedFamily)}
+                  className="flex w-fit items-center gap-2 rounded-xl border-2 border-[#031632] px-5 py-3 font-semibold text-[#031632] transition hover:bg-[#031632] hover:text-white"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20h9" strokeLinecap="round" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                  </svg>
+                  تعديل بيانات الأسرة
+                </button>
               </div>
-            </div>
 
-            <button
-              type="button"
-              onClick={() => handleOpenEditFamily(selectedFamily)}
-              className="flex w-fit items-center gap-2 rounded-xl border-2 border-[#031632] px-5 py-3 font-semibold text-[#031632] transition hover:bg-[#031632] hover:text-white"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path d="M12 20h9" strokeLinecap="round" />
-                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-              </svg>
-              تعديل بيانات الأسرة
-            </button>
-          </div>
-
-          <div className="grid gap-5 xl:grid-cols-3">
-            <DetailCard
-              title="المعلومات الأساسية"
-              icon={
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-5 w-5"
-                >
-                  <circle cx="12" cy="8" r="3" />
-                  <path d="M5 20a7 7 0 0 1 14 0" />
-                </svg>
-              }
-            >
-              <InfoRow label="الاسم الرباعي" value={selectedFamily.headName} />
-              <InfoRow label="رقم الهوية" value={selectedFamily.nationalId} />
-              <InfoRow label="تاريخ الميلاد" value={selectedFamily.birthDate} />
-              <InfoRow label="رقم الجوال" value={selectedFamily.phone} />
-              <InfoRow label="فصيلة الدم" value={selectedFamily.bloodType} />
-              <InfoRow
-                label="الحالة الاجتماعية"
-                value={selectedFamily.maritalStatus}
-              />
-              <InfoRow label="فئة الدخل" value={selectedFamily.incomeLevel} />
-              <InfoRow label="حالة العمل" value={selectedFamily.workStatus} />
-              <InfoRow label="نوع الوظيفة" value={selectedFamily.jobType} />
-            </DetailCard>
-
-            <DetailCard
-              title="بيانات السكن"
-              icon={
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-5 w-5"
-                >
-                  <path d="M3 11.5 12 4l9 7.5" />
-                  <path d="M5.5 10.5V20h13v-9.5" />
-                </svg>
-              }
-            >
-              <InfoRow
-                label="السكن سابقًا"
-                value={selectedFamily.previousResidence}
-              />
-              <InfoRow
-                label="طبيعة السكن الحالي"
-                value={selectedFamily.housingType}
-              />
-              <InfoRow
-                label="نوع مكان النزوح"
-                value={selectedFamily.displacementType}
-              />
-              <InfoRow
-                label="عنوان السكن الحالي"
-                value={selectedFamily.currentAddress}
-              />
-            </DetailCard>
-
-            <DetailCard
-              title="بيانات الزوجات"
-              icon={
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-5 w-5"
-                >
-                  <circle cx="9" cy="8" r="3" />
-                  <circle cx="16" cy="9" r="2.5" />
-                  <path d="M3 20a6 6 0 0 1 12 0M13 20a5 5 0 0 1 8 0" />
-                </svg>
-              }
-            >
-              {selectedFamily.wives.length ? (
-                <div className="space-y-3">
-                  {selectedFamily.wives.map((wife) => (
-                    <div
-                      key={wife.id || wife.nationalId}
-                      className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+              <div className="grid gap-5 xl:grid-cols-3">
+                <DetailCard
+                  title="المعلومات الأساسية"
+                  icon={
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
                     >
-                      <p className="font-bold text-[#031632]">{wife.name}</p>
-                      <p className="mt-2 text-sm text-slate-600">
-                        الهوية: {wife.nationalId || "—"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        تاريخ الميلاد: {wife.birthDate || "—"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        الجوال: {wife.phone || "—"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        العائلة السابقة: {wife.previousFamily || "—"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        الحالة الوظيفية: {wife.employmentStatus || "—"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-500">لا توجد بيانات زوجات.</p>
-              )}
-            </DetailCard>
-          </div>
-
-          <div className="grid gap-5 xl:grid-cols-3">
-            <DetailCard
-              title={`الأبناء (غير المتزوجين) — العدد: ${selectedFamily.children.length}`}
-              className="xl:col-span-2"
-              icon={
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-5 w-5"
+                      <circle cx="12" cy="8" r="3" />
+                      <path d="M5 20a7 7 0 0 1 14 0" />
+                    </svg>
+                  }
                 >
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M8 10h.01M16 10h.01M8.5 15a5 5 0 0 0 7 0" />
-                </svg>
-              }
-            >
-              {selectedFamily.children.length ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {selectedFamily.children.map((child) => (
-                    <div
-                      key={child.id || child.nationalId}
-                      className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+                  <InfoRow
+                    label="الاسم الرباعي"
+                    value={selectedFamily.headName}
+                  />
+                  <InfoRow
+                    label="رقم الهوية"
+                    value={selectedFamily.nationalId}
+                  />
+                  <InfoRow
+                    label="تاريخ الميلاد"
+                    value={selectedFamily.birthDate}
+                  />
+                  <InfoRow label="رقم الجوال" value={selectedFamily.phone} />
+                  <InfoRow
+                    label="فصيلة الدم"
+                    value={selectedFamily.bloodType}
+                  />
+                  <InfoRow
+                    label="الحالة الاجتماعية"
+                    value={selectedFamily.maritalStatus}
+                  />
+                  <InfoRow
+                    label="فئة الدخل"
+                    value={selectedFamily.incomeLevel}
+                  />
+                  <InfoRow
+                    label="حالة العمل"
+                    value={selectedFamily.workStatus}
+                  />
+                  <InfoRow label="نوع الوظيفة" value={selectedFamily.jobType} />
+                </DetailCard>
+
+                <DetailCard
+                  title="بيانات السكن"
+                  icon={
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
                     >
-                      <p className="font-bold text-[#031632]">{child.name}</p>
-                      <p className="mt-2 text-sm text-slate-600">
-                        الهوية: {child.nationalId || "—"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        تاريخ الميلاد: {child.birthDate || "—"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        الحالة التعليمية: {child.education || "—"}
-                      </p>
-                      {child.institutionName && (
-                        <p className="mt-1 text-sm text-slate-600">
-                          المؤسسة التعليمية: {child.institutionName}
-                        </p>
-                      )}
+                      <path d="M3 11.5 12 4l9 7.5" />
+                      <path d="M5.5 10.5V20h13v-9.5" />
+                    </svg>
+                  }
+                >
+                  <InfoRow
+                    label="السكن سابقًا"
+                    value={selectedFamily.previousResidence}
+                  />
+                  <InfoRow
+                    label="طبيعة السكن الحالي"
+                    value={selectedFamily.housingType}
+                  />
+                  <InfoRow
+                    label="نوع مكان النزوح"
+                    value={selectedFamily.displacementType}
+                  />
+                  <InfoRow
+                    label="عنوان السكن الحالي"
+                    value={selectedFamily.currentAddress}
+                  />
+                </DetailCard>
+
+                <DetailCard
+                  title="بيانات الزوجات"
+                  icon={
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
+                    >
+                      <circle cx="9" cy="8" r="3" />
+                      <circle cx="16" cy="9" r="2.5" />
+                      <path d="M3 20a6 6 0 0 1 12 0M13 20a5 5 0 0 1 8 0" />
+                    </svg>
+                  }
+                >
+                  {selectedFamily.wives.length ? (
+                    <div className="space-y-3">
+                      {selectedFamily.wives.map((wife) => (
+                        <div
+                          key={wife.id || wife.nationalId}
+                          className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+                        >
+                          <p className="font-bold text-[#031632]">
+                            {wife.name}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-600">
+                            الهوية: {wife.nationalId || "—"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            تاريخ الميلاد: {wife.birthDate || "—"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            الجوال: {wife.phone || "—"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            العائلة السابقة: {wife.previousFamily || "—"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            الحالة الوظيفية: {wife.employmentStatus || "—"}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p className="text-slate-500">لا توجد بيانات زوجات.</p>
+                  )}
+                </DetailCard>
+              </div>
+
+              <div className="grid gap-5 xl:grid-cols-3">
+                <DetailCard
+                  title={`الأبناء (غير المتزوجين) — العدد: ${selectedFamily.children.length}`}
+                  className="xl:col-span-2"
+                  icon={
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-5 w-5"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M8 10h.01M16 10h.01M8.5 15a5 5 0 0 0 7 0" />
+                    </svg>
+                  }
+                >
+                  {selectedFamily.children.length ? (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {selectedFamily.children.map((child) => (
+                        <div
+                          key={child.id || child.nationalId}
+                          className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+                        >
+                          <p className="font-bold text-[#031632]">
+                            {child.name}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-600">
+                            الهوية: {child.nationalId || "—"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            تاريخ الميلاد: {child.birthDate || "—"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            الحالة التعليمية: {child.education || "—"}
+                          </p>
+                          {child.institutionName && (
+                            <p className="mt-1 text-sm text-slate-600">
+                              المؤسسة التعليمية: {child.institutionName}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-500">لا توجد بيانات أبناء.</p>
+                  )}
+                </DetailCard>
+
+                <div className="space-y-5">
+                  <DetailCard
+                    title="الحالات الخاصة"
+                    icon={
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-5 w-5"
+                      >
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 7v5l3 2" />
+                      </svg>
+                    }
+                  >
+                    {selectedFamily.specialCases.length ? (
+                      <div className="space-y-3">
+                        {selectedFamily.specialCases.map((specialCase) => (
+                          <div
+                            key={
+                              specialCase.id ||
+                              `${specialCase.personName}-${specialCase.caseType}`
+                            }
+                            className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+                          >
+                            <p className="font-bold text-[#031632]">
+                              {specialCase.personName}
+                            </p>
+                            <p className="mt-2 text-sm text-slate-600">
+                              صلة القرابة: {specialCase.relation || "—"}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600">
+                              نوع الحالة: {specialCase.caseType || "—"}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600">
+                              التفاصيل: {specialCase.details || "—"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500">لا توجد حالات خاصة.</p>
+                    )}
+                  </DetailCard>
+
+                  <DetailCard
+                    title="البنات المتزوجات"
+                    icon={
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-5 w-5"
+                      >
+                        <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />
+                      </svg>
+                    }
+                  >
+                    {selectedFamily.marriedDaughters.length ? (
+                      <div className="space-y-3">
+                        {selectedFamily.marriedDaughters.map((daughter) => (
+                          <div
+                            key={daughter.id || daughter.nationalId}
+                            className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
+                          >
+                            <p className="font-bold text-[#031632]">
+                              {daughter.name}
+                            </p>
+                            <p className="mt-2 text-sm text-slate-600">
+                              الهوية: {daughter.nationalId || "—"}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600">
+                              الجوال: {daughter.phone || "—"}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600">
+                              اسم الزوج: {daughter.husbandName || "—"}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-600">
+                              جوال الزوج: {daughter.husbandPhone || "—"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500">لا توجد بنات متزوجات.</p>
+                    )}
+                  </DetailCard>
                 </div>
-              ) : (
-                <p className="text-slate-500">لا توجد بيانات أبناء.</p>
-              )}
-            </DetailCard>
-
-            <div className="space-y-5">
-              <DetailCard
-                title="الحالات الخاصة"
-                icon={
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-5 w-5"
-                  >
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3 2" />
-                  </svg>
-                }
-              >
-                {selectedFamily.specialCases.length ? (
-                  <div className="space-y-3">
-                    {selectedFamily.specialCases.map((specialCase) => (
-                      <div
-                        key={
-                          specialCase.id ||
-                          `${specialCase.personName}-${specialCase.caseType}`
-                        }
-                        className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
-                      >
-                        <p className="font-bold text-[#031632]">
-                          {specialCase.personName}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-600">
-                          صلة القرابة: {specialCase.relation || "—"}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          نوع الحالة: {specialCase.caseType || "—"}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          التفاصيل: {specialCase.details || "—"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500">لا توجد حالات خاصة.</p>
-                )}
-              </DetailCard>
-
-              <DetailCard
-                title="البنات المتزوجات"
-                icon={
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-5 w-5"
-                  >
-                    <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />
-                  </svg>
-                }
-              >
-                {selectedFamily.marriedDaughters.length ? (
-                  <div className="space-y-3">
-                    {selectedFamily.marriedDaughters.map((daughter) => (
-                      <div
-                        key={daughter.id || daughter.nationalId}
-                        className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4"
-                      >
-                        <p className="font-bold text-[#031632]">
-                          {daughter.name}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-600">
-                          الهوية: {daughter.nationalId || "—"}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          الجوال: {daughter.phone || "—"}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          اسم الزوج: {daughter.husbandName || "—"}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          جوال الزوج: {daughter.husbandPhone || "—"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500">لا توجد بنات متزوجات.</p>
-                )}
-              </DetailCard>
-            </div>
-          </div>
-        </section>
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       <EditFamilyModal

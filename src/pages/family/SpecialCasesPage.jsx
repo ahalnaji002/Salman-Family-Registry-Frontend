@@ -206,16 +206,18 @@ function SpecialCasesPage() {
         setFamilyHead(null);
       }
 
-      setHasSpecialCases(
+      const savedHasSpecialCases =
         apiFamily?.has_special_cases === null ||
-          apiFamily?.has_special_cases === undefined
+        apiFamily?.has_special_cases === undefined
           ? null
-          : Boolean(apiFamily.has_special_cases),
-      );
+          : Boolean(apiFamily.has_special_cases);
 
-      if (apiSpecialCases.length > 0) {
-        setIsSaved(true);
-      }
+      setHasSpecialCases(savedHasSpecialCases);
+
+      setIsSaved(
+        savedHasSpecialCases === false ||
+          (savedHasSpecialCases === true && apiSpecialCases.length > 0),
+      );
     } catch (requestError) {
       if (requestError instanceof TypeError) {
         setPageError("تعذر الاتصال بالخادم. تأكد أن الـ Backend يعمل.");

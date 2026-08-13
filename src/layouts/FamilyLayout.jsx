@@ -189,11 +189,13 @@ function FamilyLayout() {
   const childrenCompleted = Boolean(
     getCompletionSection("children")?.completed,
   );
+  const specialCasesCompleted = Boolean(
+    getCompletionSection("special_cases")?.completed,
+  );
 
-  const specialCasesCompleted = (familyData?.special_cases?.length || 0) > 0;
-
-  const marriedDaughtersCompleted =
-    (familyData?.married_daughters?.length || 0) > 0;
+  const marriedDaughtersCompleted = Boolean(
+    getCompletionSection("married_daughters")?.completed,
+  );
 
   // المراجعة لا تعتبر مكتملة لمجرد وصول النسبة إلى 100%
   // تعتبر مكتملة فقط بعد إرسال النموذج أو اعتماده

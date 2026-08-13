@@ -148,17 +148,18 @@ function FamilyDashboardPage() {
 
   const wivesSection = getCompletionSection("wives");
 
-  const childrenCompleted = Boolean(
-    getCompletionSection("children")?.completed,
-  );
-
   const hasChildren = family?.has_children;
+
+  const childrenCount = familyData?.children?.length || 0;
+
+  const childrenCompleted =
+    hasChildren === false || (hasChildren === true && childrenCount > 0);
 
   const childrenStatus =
     hasChildren === false
       ? "لا يوجد أبناء"
       : hasChildren === true
-        ? childrenCompleted
+        ? childrenCount > 0
           ? "مكتمل"
           : "غير مكتمل"
         : "لم يبدأ";
@@ -216,7 +217,7 @@ function FamilyDashboardPage() {
     basicInfoCompleted,
     wivesCompleted,
     housingCompleted,
-    hasChildren === false || childrenCompleted,
+    childrenCompleted,
     hasSpecialCases === false || specialCasesCount > 0,
     hasMarriedDaughters === false || marriedDaughtersCount > 0,
     reviewCompleted,

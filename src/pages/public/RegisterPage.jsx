@@ -58,6 +58,15 @@ function RegisterPage() {
       return;
     }
 
+    const lastName = nameParts[nameParts.length - 1];
+
+    if (lastName !== "سلمان") {
+      setErrorMessage(
+        "التسجيل متاح فقط لأفراد عائلة سلمان، ويجب أن يكون اسم العائلة سلمان.",
+      );
+      return;
+    }
+
     if (!/^\d{9}$/.test(form.nationalId)) {
       setErrorMessage("رقم الهوية يجب أن يتكون من 9 أرقام.");
       return;

@@ -145,6 +145,16 @@ function ChildrenPage() {
           ? null
           : Boolean(family.has_children),
       );
+      const savedHasChildren =
+        family?.has_children === null || family?.has_children === undefined
+          ? null
+          : Boolean(family.has_children);
+
+      setHasChildren(savedHasChildren);
+
+      if (savedHasChildren === false) {
+        setIsSaved(true);
+      }
     } catch (requestError) {
       setPageError(requestError.message || "حدث خطأ أثناء تحميل حالة الأبناء.");
     }
