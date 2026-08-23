@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { API_BASE_URL } from "../../config/api";
 
-
 function ReviewPage() {
   const navigate = useNavigate();
 
@@ -52,15 +51,26 @@ function ReviewPage() {
     return String(dateValue).split("T")[0];
   };
 
-  const getMaritalStatusLabel = (value) => {
-    const labels = {
+  const getMaritalStatusLabel = (value, gender) => {
+    if (gender === "female") {
+      const femaleLabels = {
+        single: "عزباء",
+        married: "متزوجة",
+        divorced: "مطلقة",
+        widowed: "أرملة",
+      };
+
+      return femaleLabels[value] || value || "غير مضاف";
+    }
+
+    const maleLabels = {
       single: "أعزب",
       married: "متزوج",
       divorced: "مطلق",
       widowed: "أرمل",
     };
 
-    return labels[value] || value || "غير مضاف";
+    return maleLabels[value] || value || "غير مضاف";
   };
 
   const getIncomeCategoryLabel = (value) => {
@@ -162,6 +172,7 @@ function ReviewPage() {
       injured: "جريح",
       disability: "ذوي إعاقة",
       martyr: "شهيد",
+      deceased: "متوفى",
       pregnant: "حامل",
     };
 
@@ -490,7 +501,7 @@ function ReviewPage() {
                 <p className="text-xs text-slate-500">الحالة الاجتماعية</p>
 
                 <p className="mt-1 text-sm font-semibold text-[#031632]">
-                  {getMaritalStatusLabel(family.marital_status)}
+                  {getMaritalStatusLabel(family.marital_status, family.gender)}
                 </p>
               </div>
 
@@ -525,87 +536,93 @@ function ReviewPage() {
           </div>
 
           {/* الزوجات */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold text-[#031632]">الزوجات</h2>
+          {family.gender === "male" && family.marital_status === "married" && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-bold text-[#031632]">الزوجات</h2>
 
-                <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-semibold text-[#031632]">
-                  العدد: {wives.length}
-                </span>
+                  <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-semibold text-[#031632]">
+                    العدد: {wives.length}
+                  </span>
+                </div>
+
+                {family.form_status === "draft" && family.editing_enabled && (
+                  <Link
+                    to="/family/wives"
+                    className="text-sm font-semibold text-[#031632] transition hover:text-[#d8ad55]"
+                  >
+                    تعديل
+                  </Link>
+                )}
               </div>
 
-              {family.form_status === "draft" && family.editing_enabled && (
-                <Link
-                  to="/family/wives"
-                  className="text-sm font-semibold text-[#031632] transition hover:text-[#d8ad55]"
-                >
-                  تعديل
-                </Link>
-              )}
+              <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
+                {wives.length > 0 ? (
+                  wives.map((wife) => (
+                    <div
+                      key={wife.id}
+                      className="grid gap-4 rounded-xl bg-[#f8f8fe] p-4 sm:grid-cols-2 lg:grid-cols-6"
+                    >
+                      <div>
+                        <p className="text-xs text-slate-500">الاسم</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.full_name}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">رقم الهوية</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.national_id}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">تاريخ الميلاد</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {normalizeDate(wife.date_of_birth)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">رقم الجوال</p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.phone || "غير مضاف"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">
+                          العائلة السابقة
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {wife.previous_family_name || "غير مضاف"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-slate-500">
+                          الحالة الوظيفية
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-[#031632]">
+                          {getEmploymentStatusLabel(wife.employment_status)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500">لا توجد زوجات مضافة.</p>
+                )}
+              </div>
             </div>
-
-            <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
-              {wives.length > 0 ? (
-                wives.map((wife) => (
-                  <div
-                    key={wife.id}
-                    className="grid gap-4 rounded-xl bg-[#f8f8fe] p-4 sm:grid-cols-2 lg:grid-cols-6"
-                  >
-                    <div>
-                      <p className="text-xs text-slate-500">الاسم</p>
-
-                      <p className="mt-1 text-sm font-semibold text-[#031632]">
-                        {wife.full_name}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-500">رقم الهوية</p>
-
-                      <p className="mt-1 text-sm font-semibold text-[#031632]">
-                        {wife.national_id}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-500">تاريخ الميلاد</p>
-
-                      <p className="mt-1 text-sm font-semibold text-[#031632]">
-                        {normalizeDate(wife.date_of_birth)}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-500">رقم الجوال</p>
-
-                      <p className="mt-1 text-sm font-semibold text-[#031632]">
-                        {wife.phone || "غير مضاف"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-500">العائلة السابقة</p>
-
-                      <p className="mt-1 text-sm font-semibold text-[#031632]">
-                        {wife.previous_family_name || "غير مضاف"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-slate-500">الحالة الوظيفية</p>
-
-                      <p className="mt-1 text-sm font-semibold text-[#031632]">
-                        {getEmploymentStatusLabel(wife.employment_status)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-500">لا توجد زوجات مضافة.</p>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* السكن */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
