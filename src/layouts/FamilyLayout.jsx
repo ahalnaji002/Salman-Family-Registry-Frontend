@@ -165,6 +165,13 @@ function FamilyLayout() {
 
   const family = familyData?.family || null;
 
+  const shouldShowWivesStep =
+    family?.gender === "male" && family?.marital_status === "married";
+
+  const visibleFormSteps = formSteps.filter(
+    (step) => step.key !== "wives" || shouldShowWivesStep,
+  );
+
   const completionSections = completionData?.sections || [];
 
   const getCompletionSection = (key) =>
@@ -280,13 +287,13 @@ function FamilyLayout() {
         <div className="mx-auto w-full max-w-7xl px-5 py-6 md:px-8 md:py-8">
           <div className="overflow-x-auto pb-2">
             <div className="flex min-w-[980px] items-start">
-              {formSteps.map((step, index) => {
+              {visibleFormSteps.map((step, index) => {
                 const active = isStepActive(step);
                 const completed = isStepCompleted(step);
 
                 return (
                   <div
-                    key={step.number}
+                    key={step.key}
                     className="flex flex-1 items-start last:flex-none"
                   >
                     <Link
@@ -318,7 +325,7 @@ function FamilyLayout() {
                       </p>
                     </Link>
 
-                    {index < formSteps.length - 1 && (
+                    {index < visibleFormSteps.length - 1 && (
                       <div
                         className={`mt-6 h-[2px] flex-1 ${
                           completed ? "bg-[#ead39e]" : "bg-slate-200"

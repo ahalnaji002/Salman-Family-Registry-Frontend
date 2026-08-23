@@ -5,10 +5,7 @@ const formatDateForInput = (value) => {
     return "";
   }
 
-  if (
-    typeof value === "string" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(value)
-  ) {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return value;
   }
 
@@ -31,6 +28,9 @@ const emptyForm = {
   phone: "",
   birthDate: "",
   bloodType: "",
+  gender: "",
+  deceasedSpouseFromSalman: null,
+  deceasedSpouseCaseType: "",
   maritalStatusValue: "",
   incomeLevel: "",
   workStatusValue: "",
@@ -38,12 +38,7 @@ const emptyForm = {
   otherJobType: "",
 };
 
-function EditFamilyModal({
-  isOpen,
-  family,
-  onClose,
-  onSave,
-}) {
+function EditFamilyModal({ isOpen, family, onClose, onSave }) {
   const [form, setForm] = useState(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -59,11 +54,12 @@ function EditFamilyModal({
       phone: family.phone ?? "",
       birthDate: formatDateForInput(family.birthDate),
       bloodType: family.bloodType ?? "",
-      maritalStatusValue:
-        family.maritalStatusValue ?? "",
+      gender: family.gender ?? "",
+      deceasedSpouseFromSalman: family.deceasedSpouseFromSalman ?? null,
+      deceasedSpouseCaseType: family.deceasedSpouseCaseType ?? "",
+      maritalStatusValue: family.maritalStatusValue ?? "",
       incomeLevel: family.incomeLevel ?? "",
-      workStatusValue:
-        family.workStatusValue ?? "",
+      workStatusValue: family.workStatusValue ?? "",
       jobTypeValue: family.jobTypeValue ?? "",
       otherJobType: family.otherJobType ?? "",
     });
@@ -82,15 +78,11 @@ function EditFamilyModal({
     let nextValue = value;
 
     if (name === "nationalId") {
-      nextValue = value
-        .replace(/\D/g, "")
-        .slice(0, 9);
+      nextValue = value.replace(/\D/g, "").slice(0, 9);
     }
 
     if (name === "phone") {
-      nextValue = value
-        .replace(/[^\d+]/g, "")
-        .slice(0, 15);
+      nextValue = value.replace(/[^\d+]/g, "").slice(0, 15);
     }
 
     setForm((current) => {
@@ -99,19 +91,24 @@ function EditFamilyModal({
         [name]: nextValue,
       };
 
-      if (
-        name === "workStatusValue" &&
-        nextValue !== "employee"
-      ) {
+      if (name === "workStatusValue" && nextValue !== "employee") {
         nextForm.jobTypeValue = "";
         nextForm.otherJobType = "";
       }
 
-      if (
-        name === "jobTypeValue" &&
-        nextValue !== "other"
-      ) {
+      if (name === "jobTypeValue" && nextValue !== "other") {
         nextForm.otherJobType = "";
+      }
+
+      if (name === "gender") {
+        nextForm.maritalStatusValue = "";
+        nextForm.deceasedSpouseFromSalman = null;
+        nextForm.deceasedSpouseCaseType = "";
+      }
+
+      if (name === "maritalStatusValue" && nextValue !== "widowed") {
+        nextForm.deceasedSpouseFromSalman = null;
+        nextForm.deceasedSpouseCaseType = "";
       }
 
       return nextForm;
@@ -121,13 +118,9 @@ function EditFamilyModal({
   };
 
   const validateForm = () => {
-    const normalizedName = form.headName
-      .trim()
-      .replace(/\s+/g, " ");
+    const normalizedName = form.headName.trim().replace(/\s+/g, " ");
 
-    const nameParts = normalizedName
-      .split(" ")
-      .filter(Boolean);
+    const nameParts = normalizedName.split(" ").filter(Boolean);
 
     if (nameParts.length < 4) {
       return "اسم رب الأسرة يجب أن يكون رباعيًا على الأقل.";
@@ -145,8 +138,34 @@ function EditFamilyModal({
       return "تاريخ الميلاد مطلوب.";
     }
 
+    if (!form.gender) {
+      return "الجنس مطلوب.";
+    }
+
     if (!form.maritalStatusValue) {
       return "الحالة الاجتماعية مطلوبة.";
+    }
+
+    if (
+      form.gender === "female" &&
+      !["divorced", "widowed"].includes(form.maritalStatusValue)
+    ) {
+      return "المرأة يمكن أن يكون لها سجل مستقل فقط إذا كانت مطلقة أو أرملة.";
+    }
+
+    if (
+      form.maritalStatusValue === "widowed" &&
+      form.deceasedSpouseFromSalman === null
+    ) {
+      return "يرجى تحديد ما إذا كان الزوج أو الزوجة المتوفى/ة من عائلة سلمان.";
+    }
+
+    if (
+      form.maritalStatusValue === "widowed" &&
+      form.deceasedSpouseFromSalman === true &&
+      !form.deceasedSpouseCaseType
+    ) {
+      return "يرجى تحديد هل الوفاة استشهاد أم وفاة أخرى.";
     }
 
     if (!form.incomeLevel) {
@@ -157,10 +176,7 @@ function EditFamilyModal({
       return "حالة العمل مطلوبة.";
     }
 
-    if (
-      form.workStatusValue === "employee" &&
-      !form.jobTypeValue
-    ) {
+    if (form.workStatusValue === "employee" && !form.jobTypeValue) {
       return "نوع الوظيفة مطلوب عند اختيار موظف.";
     }
 
@@ -195,33 +211,35 @@ function EditFamilyModal({
     try {
       await onSave({
         ...family,
-        headName: form.headName
-          .trim()
-          .replace(/\s+/g, " "),
+        headName: form.headName.trim().replace(/\s+/g, " "),
         nationalId: form.nationalId,
         phone: form.phone.trim(),
         birthDate: form.birthDate,
         bloodType: form.bloodType || null,
-        maritalStatusValue:
-          form.maritalStatusValue,
+        gender: form.gender,
+        maritalStatusValue: form.maritalStatusValue,
+        deceasedSpouseFromSalman:
+          form.maritalStatusValue === "widowed"
+            ? form.deceasedSpouseFromSalman
+            : null,
+        deceasedSpouseCaseType:
+          form.maritalStatusValue === "widowed" &&
+          form.deceasedSpouseFromSalman === true
+            ? form.deceasedSpouseCaseType
+            : null,
         incomeLevel: form.incomeLevel,
-        workStatusValue:
-          form.workStatusValue,
+        workStatusValue: form.workStatusValue,
         jobTypeValue:
           form.workStatusValue === "employee"
             ? form.jobTypeValue || null
             : null,
         otherJobType:
-          form.workStatusValue === "employee" &&
-          form.jobTypeValue === "other"
+          form.workStatusValue === "employee" && form.jobTypeValue === "other"
             ? form.otherJobType.trim()
             : null,
       });
     } catch (error) {
-      setErrorMessage(
-        error.message ||
-          "حدث خطأ أثناء تعديل بيانات الأسرة.",
-      );
+      setErrorMessage(error.message || "حدث خطأ أثناء تعديل بيانات الأسرة.");
     } finally {
       setIsSubmitting(false);
     }
@@ -263,10 +281,7 @@ function EditFamilyModal({
           </button>
         </div>
 
-        <form
-          className="flex min-h-0 flex-1 flex-col"
-          onSubmit={handleSubmit}
-        >
+        <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
           <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
             {errorMessage && (
               <div
@@ -289,9 +304,7 @@ function EditFamilyModal({
                     className="mb-2 block font-semibold text-[#111c2c]"
                   >
                     اسم رب الأسرة الرباعي
-                    <span className="mr-1 text-red-600">
-                      *
-                    </span>
+                    <span className="mr-1 text-red-600">*</span>
                   </label>
 
                   <input
@@ -312,9 +325,7 @@ function EditFamilyModal({
                     className="mb-2 block font-semibold text-[#111c2c]"
                   >
                     رقم الهوية
-                    <span className="mr-1 text-red-600">
-                      *
-                    </span>
+                    <span className="mr-1 text-red-600">*</span>
                   </label>
 
                   <input
@@ -337,9 +348,7 @@ function EditFamilyModal({
                     className="mb-2 block font-semibold text-[#111c2c]"
                   >
                     رقم الجوال
-                    <span className="mr-1 text-red-600">
-                      *
-                    </span>
+                    <span className="mr-1 text-red-600">*</span>
                   </label>
 
                   <input
@@ -360,9 +369,7 @@ function EditFamilyModal({
                     className="mb-2 block font-semibold text-[#111c2c]"
                   >
                     تاريخ الميلاد
-                    <span className="mr-1 text-red-600">
-                      *
-                    </span>
+                    <span className="mr-1 text-red-600">*</span>
                   </label>
 
                   <input
@@ -393,9 +400,7 @@ function EditFamilyModal({
                     disabled={isSubmitting}
                     className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <option value="">
-                      غير محدد
-                    </option>
+                    <option value="">غير محدد</option>
                     <option value="A+">A+</option>
                     <option value="A-">A-</option>
                     <option value="B+">B+</option>
@@ -409,13 +414,35 @@ function EditFamilyModal({
 
                 <div>
                   <label
+                    htmlFor="editFamilyGender"
+                    className="mb-2 block font-semibold text-[#111c2c]"
+                  >
+                    الجنس
+                    <span className="mr-1 text-red-600">*</span>
+                  </label>
+
+                  <select
+                    id="editFamilyGender"
+                    name="gender"
+                    value={form.gender}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                    className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="">اختر الجنس</option>
+                    <option value="male">ذكر</option>
+                    <option value="female">أنثى</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
                     htmlFor="editFamilyMaritalStatus"
                     className="mb-2 block font-semibold text-[#111c2c]"
                   >
                     الحالة الاجتماعية
-                    <span className="mr-1 text-red-600">
-                      *
-                    </span>
+                    <span className="mr-1 text-red-600">*</span>
                   </label>
 
                   <select
@@ -427,23 +454,100 @@ function EditFamilyModal({
                     disabled={isSubmitting}
                     className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <option value="">
-                      اختر الحالة الاجتماعية
-                    </option>
-                    <option value="single">
-                      أعزب
-                    </option>
-                    <option value="married">
-                      متزوج
-                    </option>
-                    <option value="divorced">
-                      مطلق
-                    </option>
-                    <option value="widowed">
-                      أرمل
-                    </option>
+                    <option value="">اختر الحالة الاجتماعية</option>
+
+                    {form.gender === "male" && (
+                      <>
+                        <option value="single">أعزب</option>
+                        <option value="married">متزوج</option>
+                        <option value="divorced">مطلق</option>
+                        <option value="widowed">أرمل</option>
+                      </>
+                    )}
+
+                    {form.gender === "female" && (
+                      <>
+                        <option value="divorced">مطلقة</option>
+                        <option value="widowed">أرملة</option>
+                      </>
+                    )}
                   </select>
                 </div>
+
+                {form.maritalStatusValue === "widowed" && (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="editFamilyDeceasedSpouseFromSalman"
+                        className="mb-2 block font-semibold text-[#111c2c]"
+                      >
+                        هل الزوج/الزوجة المتوفى/ة من عائلة سلمان؟
+                        <span className="mr-1 text-red-600">*</span>
+                      </label>
+
+                      <select
+                        id="editFamilyDeceasedSpouseFromSalman"
+                        value={
+                          form.deceasedSpouseFromSalman === null
+                            ? ""
+                            : form.deceasedSpouseFromSalman
+                              ? "true"
+                              : "false"
+                        }
+                        onChange={(event) => {
+                          const value =
+                            event.target.value === ""
+                              ? null
+                              : event.target.value === "true";
+
+                          setForm((current) => ({
+                            ...current,
+                            deceasedSpouseFromSalman: value,
+                            deceasedSpouseCaseType:
+                              value === true
+                                ? current.deceasedSpouseCaseType
+                                : "",
+                          }));
+
+                          setErrorMessage("");
+                        }}
+                        required
+                        disabled={isSubmitting}
+                        className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <option value="">اختر...</option>
+                        <option value="true">نعم</option>
+                        <option value="false">لا</option>
+                      </select>
+                    </div>
+
+                    {form.deceasedSpouseFromSalman === true && (
+                      <div>
+                        <label
+                          htmlFor="editFamilyDeceasedSpouseCaseType"
+                          className="mb-2 block font-semibold text-[#111c2c]"
+                        >
+                          نوع الوفاة
+                          <span className="mr-1 text-red-600">*</span>
+                        </label>
+
+                        <select
+                          id="editFamilyDeceasedSpouseCaseType"
+                          name="deceasedSpouseCaseType"
+                          value={form.deceasedSpouseCaseType}
+                          onChange={handleChange}
+                          required
+                          disabled={isSubmitting}
+                          className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <option value="">اختر نوع الوفاة</option>
+                          <option value="martyr">استشهاد</option>
+                          <option value="deceased">وفاة أخرى</option>
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 <div>
                   <label
@@ -451,9 +555,7 @@ function EditFamilyModal({
                     className="mb-2 block font-semibold text-[#111c2c]"
                   >
                     فئة الدخل
-                    <span className="mr-1 text-red-600">
-                      *
-                    </span>
+                    <span className="mr-1 text-red-600">*</span>
                   </label>
 
                   <select
@@ -465,18 +567,10 @@ function EditFamilyModal({
                     disabled={isSubmitting}
                     className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <option value="">
-                      اختر فئة الدخل
-                    </option>
-                    <option value="0-1000">
-                      0 - 1000
-                    </option>
-                    <option value="1000-3000">
-                      1000 - 3000
-                    </option>
-                    <option value="3000+">
-                      أكثر من 3000
-                    </option>
+                    <option value="">اختر فئة الدخل</option>
+                    <option value="0-1000">0 - 1000</option>
+                    <option value="1000-3000">1000 - 3000</option>
+                    <option value="3000+">أكثر من 3000</option>
                   </select>
                 </div>
 
@@ -486,9 +580,7 @@ function EditFamilyModal({
                     className="mb-2 block font-semibold text-[#111c2c]"
                   >
                     حالة العمل
-                    <span className="mr-1 text-red-600">
-                      *
-                    </span>
+                    <span className="mr-1 text-red-600">*</span>
                   </label>
 
                   <select
@@ -500,32 +592,21 @@ function EditFamilyModal({
                     disabled={isSubmitting}
                     className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <option value="">
-                      اختر حالة العمل
-                    </option>
-                    <option value="employee">
-                      موظف
-                    </option>
-                    <option value="worker">
-                      عامل
-                    </option>
-                    <option value="not_working">
-                      لا يعمل
-                    </option>
+                    <option value="">اختر حالة العمل</option>
+                    <option value="employee">موظف</option>
+                    <option value="worker">عامل</option>
+                    <option value="not_working">لا يعمل</option>
                   </select>
                 </div>
 
-                {form.workStatusValue ===
-                  "employee" && (
+                {form.workStatusValue === "employee" && (
                   <div>
                     <label
                       htmlFor="editFamilyJobType"
                       className="mb-2 block font-semibold text-[#111c2c]"
                     >
                       نوع الوظيفة
-                      <span className="mr-1 text-red-600">
-                        *
-                      </span>
+                      <span className="mr-1 text-red-600">*</span>
                     </label>
 
                     <select
@@ -537,24 +618,15 @@ function EditFamilyModal({
                       disabled={isSubmitting}
                       className="w-full rounded-xl border border-slate-300 bg-[#f8f9fd] px-4 py-3 outline-none transition focus:border-[#031632] focus:ring-2 focus:ring-[#d7e2ff] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <option value="">
-                        اختر نوع الوظيفة
-                      </option>
-                      <option value="government">
-                        قطاع حكومي
-                      </option>
-                      <option value="private">
-                        قطاع خاص
-                      </option>
-                      <option value="other">
-                        أخرى
-                      </option>
+                      <option value="">اختر نوع الوظيفة</option>
+                      <option value="government">قطاع حكومي</option>
+                      <option value="private">قطاع خاص</option>
+                      <option value="other">أخرى</option>
                     </select>
                   </div>
                 )}
 
-                {form.workStatusValue ===
-                  "employee" &&
+                {form.workStatusValue === "employee" &&
                   form.jobTypeValue === "other" && (
                     <div className="lg:col-span-2">
                       <label
@@ -562,9 +634,7 @@ function EditFamilyModal({
                         className="mb-2 block font-semibold text-[#111c2c]"
                       >
                         توضيح نوع الوظيفة
-                        <span className="mr-1 text-red-600">
-                          *
-                        </span>
+                        <span className="mr-1 text-red-600">*</span>
                       </label>
 
                       <input
@@ -584,10 +654,9 @@ function EditFamilyModal({
             </section>
 
             <div className="rounded-xl border border-[#d7e2ff] bg-[#f4f6ff] p-4 text-sm leading-7 text-slate-600">
-              هذا التعديل يحدّث بيانات رب الأسرة
-              الأساسية فقط. بيانات السكن والزوجات
-              والأبناء والبنات المتزوجات والحالات
-              الخاصة تبقى محفوظة كما هي.
+              هذا التعديل يحدّث بيانات رب الأسرة الأساسية فقط. بيانات السكن
+              والزوجات والأبناء والبنات المتزوجات والحالات الخاصة تبقى محفوظة
+              كما هي.
             </div>
           </div>
 
@@ -606,9 +675,7 @@ function EditFamilyModal({
               disabled={isSubmitting}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#031632] px-5 py-3 font-semibold text-white transition hover:bg-[#1a2b48] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting
-                ? "جارٍ حفظ التعديلات..."
-                : "حفظ تعديلات الأسرة"}
+              {isSubmitting ? "جارٍ حفظ التعديلات..." : "حفظ تعديلات الأسرة"}
 
               {isSubmitting && (
                 <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />

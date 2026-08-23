@@ -16,11 +16,14 @@ const initialSpecialCaseForm = {
 function SpecialCasesPage() {
   const navigate = useNavigate();
 
+  const [isDeceasedSpouseMode, setIsDeceasedSpouseMode] = useState(false);
+
   const [specialCases, setSpecialCases] = useState([]);
   const [hasSpecialCases, setHasSpecialCases] = useState(null);
   const [savingHasSpecialCases, setSavingHasSpecialCases] = useState(false);
 
   const [familyHead, setFamilyHead] = useState(null);
+  const [familyInfo, setFamilyInfo] = useState(null);
   const [wives, setWives] = useState([]);
   const [children, setChildren] = useState([]);
 
@@ -110,7 +113,7 @@ function SpecialCasesPage() {
     nationalId: String(family.national_id || ""),
     dateOfBirth: normalizeDate(family.date_of_birth),
     relationship: "رب الأسرة",
-    gender: "male",
+    gender: family.gender || "",
   });
 
   const loadPageData = async () => {
@@ -206,6 +209,7 @@ function SpecialCasesPage() {
         setFamilyHead(null);
       }
 
+      setFamilyInfo(apiFamily || null);
       const savedHasSpecialCases =
         apiFamily?.has_special_cases === null ||
         apiFamily?.has_special_cases === undefined
@@ -306,10 +310,38 @@ function SpecialCasesPage() {
     return [];
   }, [specialCaseForm.caseType, familyHead, wives, children]);
 
+  const isWidowed = familyInfo?.marital_status === "widowed";
+
+  const deceasedSpouseFromSalman =
+    familyInfo?.deceased_spouse_from_salman === null ||
+    familyInfo?.deceased_spouse_from_salman === undefined
+      ? null
+      : Boolean(familyInfo.deceased_spouse_from_salman);
+
+  const requiredDeceasedSpouseCaseType =
+    familyInfo?.deceased_spouse_case_type || "";
+
+  const requiredDeceasedSpouseRelationship =
+    familyInfo?.gender === "female" ? "زوج" : "زوجة";
+
+  const hasRequiredDeceasedSpouseCase =
+    isWidowed &&
+    deceasedSpouseFromSalman === true &&
+    requiredDeceasedSpouseCaseType
+      ? specialCases.some(
+          (item) =>
+            item.caseType === requiredDeceasedSpouseCaseType &&
+            item.relationship === requiredDeceasedSpouseRelationship,
+        )
+      : false;
+
   const isMartyr = specialCaseForm.caseType === "martyr";
+  const isDeceased = specialCaseForm.caseType === "deceased";
+
+  const requiresManualPerson = isMartyr || isDeceased;
 
   const requiresExistingPerson =
-    specialCaseForm.caseType && specialCaseForm.caseType !== "martyr";
+    specialCaseForm.caseType && !requiresManualPerson;
 
   const getCaseTypeLabel = (caseType) => {
     const labels = {
@@ -317,6 +349,7 @@ function SpecialCasesPage() {
       injured: "جريح",
       disability: "ذوي إعاقة",
       martyr: "شهيد",
+      deceased: "متوفى",
       pregnant: "حامل",
     };
 
@@ -348,6 +381,33 @@ function SpecialCasesPage() {
     setSuccessMessage("");
     setModalError("");
     setIsModalOpen(true);
+    setIsDeceasedSpouseMode(false);
+  };
+
+  const handleAddDeceasedSpouseCase = () => {
+    if (
+      !isWidowed ||
+      deceasedSpouseFromSalman !== true ||
+      !requiredDeceasedSpouseCaseType
+    ) {
+      return;
+    }
+
+    setIsDeceasedSpouseMode(true);
+
+    setEditingCaseId(null);
+
+    setSpecialCaseForm({
+      ...initialSpecialCaseForm,
+      caseType: requiredDeceasedSpouseCaseType,
+      relationship: requiredDeceasedSpouseRelationship,
+    });
+
+    setErrors({});
+    setPageError("");
+    setSuccessMessage("");
+    setModalError("");
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
@@ -360,6 +420,7 @@ function SpecialCasesPage() {
     setSpecialCaseForm(initialSpecialCaseForm);
     setErrors({});
     setModalError("");
+    setIsDeceasedSpouseMode(false);
   };
 
   const handleCaseTypeChange = (event) => {
@@ -463,9 +524,11 @@ function SpecialCasesPage() {
           : "يرجى اختيار صاحب الحالة.";
     }
 
-    if (isMartyr) {
+    if (requiresManualPerson) {
       if (!specialCaseForm.fullName.trim()) {
-        newErrors.fullName = "يرجى إدخال اسم الشهيد.";
+        newErrors.fullName = isMartyr
+          ? "يرجى إدخال اسم الشهيد."
+          : "يرجى إدخال اسم المتوفى.";
       }
 
       if (!/^\d{9}$/.test(specialCaseForm.nationalId)) {
@@ -584,10 +647,9 @@ function SpecialCasesPage() {
   };
 
   const handleEditSpecialCase = (specialCase) => {
-    const matchingPerson =
-      specialCase.caseType === "martyr"
-        ? null
-        : findPersonByNationalId(specialCase.nationalId, specialCase.caseType);
+    const matchingPerson = ["martyr", "deceased"].includes(specialCase.caseType)
+      ? null
+      : findPersonByNationalId(specialCase.nationalId, specialCase.caseType);
 
     setEditingCaseId(specialCase.id);
 
@@ -612,11 +674,36 @@ function SpecialCasesPage() {
     setPageError("");
     setModalError("");
     setSuccessMessage("");
+    const isRequiredDeceasedSpouseCase =
+      isWidowed &&
+      deceasedSpouseFromSalman === true &&
+      specialCase.caseType === requiredDeceasedSpouseCaseType &&
+      specialCase.relationship === requiredDeceasedSpouseRelationship;
+
+    setIsDeceasedSpouseMode(isRequiredDeceasedSpouseCase);
     setIsModalOpen(true);
   };
 
   const handleDeleteSpecialCase = async (caseId) => {
     if (deletingCaseId) {
+      return;
+    }
+
+    const specialCaseToDelete = specialCases.find(
+      (specialCase) => specialCase.id === caseId,
+    );
+
+    const isRequiredDeceasedSpouseCase =
+      isWidowed &&
+      deceasedSpouseFromSalman === true &&
+      specialCaseToDelete &&
+      specialCaseToDelete.caseType === requiredDeceasedSpouseCaseType &&
+      specialCaseToDelete.relationship === requiredDeceasedSpouseRelationship;
+
+    if (isRequiredDeceasedSpouseCase) {
+      setPageError(
+        "لا يمكن حذف بيانات الزوج/الزوجة المتوفى/ة طالما أن الحالة الاجتماعية أرمل/أرملة وتم تحديد أن المتوفى/ة من عائلة سلمان. غيّر البيانات الأساسية أولًا إذا لزم.",
+      );
       return;
     }
 
@@ -747,7 +834,7 @@ function SpecialCasesPage() {
 
                 <p className="mt-2 text-sm leading-7 text-slate-500">
                   تشمل الحالات الخاصة: المرضى، الجرحى، ذوي الإعاقة، الشهداء،
-                  والحوامل.
+                  المتوفين، والحوامل.
                 </p>
               </div>
 
@@ -767,7 +854,10 @@ function SpecialCasesPage() {
 
                 <button
                   type="button"
-                  disabled={savingHasSpecialCases}
+                  disabled={
+                    savingHasSpecialCases ||
+                    (isWidowed && deceasedSpouseFromSalman === true)
+                  }
                   onClick={() => handleHasSpecialCasesChange(false)}
                   className={`min-w-[90px] rounded-xl border px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                     hasSpecialCases === false
@@ -777,6 +867,13 @@ function SpecialCasesPage() {
                 >
                   لا
                 </button>
+
+                {isWidowed && deceasedSpouseFromSalman === true && (
+                  <p className="mt-3 text-xs font-medium text-amber-700">
+                    تم تحديد أن الزوج/الزوجة المتوفى/ة من عائلة سلمان، لذلك
+                    تعتبر الحالات الخاصة موجودة تلقائيًا.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -786,6 +883,44 @@ function SpecialCasesPage() {
               </p>
             )}
           </div>
+
+          {isWidowed &&
+            deceasedSpouseFromSalman === true &&
+            requiredDeceasedSpouseCaseType &&
+            !hasRequiredDeceasedSpouseCase && (
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                <h3 className="text-sm font-bold text-amber-900">
+                  يجب إضافة بيانات{" "}
+                  {requiredDeceasedSpouseRelationship === "زوج"
+                    ? "الزوج المتوفى"
+                    : "الزوجة المتوفاة"}{" "}
+                  من عائلة سلمان.
+                </h3>
+
+                <p className="mt-2 text-sm leading-7 text-amber-800">
+                  تم تحديد أن{" "}
+                  {requiredDeceasedSpouseRelationship === "زوج"
+                    ? "الزوج المتوفى"
+                    : "الزوجة المتوفاة"}{" "}
+                  من عائلة سلمان، ونوع الوفاة هو{" "}
+                  {requiredDeceasedSpouseCaseType === "martyr"
+                    ? "استشهاد"
+                    : "وفاة أخرى"}
+                  . يرجى إضافة بياناته/ا ضمن الحالات الخاصة قبل إكمال النموذج.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleAddDeceasedSpouseCase}
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-[#031632] px-5 text-sm font-semibold text-white transition hover:bg-[#020f23]"
+                >
+                  إضافة بيانات{" "}
+                  {requiredDeceasedSpouseRelationship === "زوج"
+                    ? "الزوج المتوفى"
+                    : "الزوجة المتوفاة"}
+                </button>
+              </div>
+            )}
 
           {hasSpecialCases === true && (
             <>
@@ -1094,7 +1229,7 @@ function SpecialCasesPage() {
                     name="caseType"
                     value={specialCaseForm.caseType}
                     onChange={handleCaseTypeChange}
-                    disabled={savingCase}
+                    disabled={savingCase || isDeceasedSpouseMode}
                     className={`${inputClassName("caseType")} h-12`}
                   >
                     <option value="">اختر نوع الحالة...</option>
@@ -1106,6 +1241,8 @@ function SpecialCasesPage() {
                     <option value="disability">ذوي إعاقة</option>
 
                     <option value="martyr">شهيد</option>
+
+                    <option value="deceased">متوفى</option>
 
                     <option value="pregnant">حامل</option>
                   </select>
@@ -1211,11 +1348,13 @@ function SpecialCasesPage() {
                     </div>
                   )}
 
-                {isMartyr && (
+                {requiresManualPerson && (
                   <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
                     <div className="md:col-span-2">
                       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-800">
-                        بيانات الشهيد يتم إدخالها يدويًا.
+                        {isMartyr
+                          ? "بيانات الشهيد يتم إدخالها يدويًا."
+                          : "بيانات المتوفى يتم إدخالها يدويًا."}{" "}
                       </div>
                     </div>
 
@@ -1224,7 +1363,8 @@ function SpecialCasesPage() {
                         htmlFor="specialCaseFullName"
                         className="mb-2 block text-sm font-semibold text-[#031632]"
                       >
-                        اسم الشهيد <span className="text-red-500">*</span>
+                        {isMartyr ? "اسم الشهيد" : "اسم المتوفى"}{" "}
+                        <span className="text-red-500">*</span>{" "}
                       </label>
 
                       <input
@@ -1234,7 +1374,9 @@ function SpecialCasesPage() {
                         value={specialCaseForm.fullName}
                         onChange={handleSpecialCaseFormChange}
                         disabled={savingCase}
-                        placeholder="أدخل اسم الشهيد"
+                        placeholder={
+                          isMartyr ? "أدخل اسم الشهيد" : "أدخل اسم المتوفى"
+                        }
                         className={`${inputClassName("fullName")} h-12`}
                       />
 
@@ -1314,7 +1456,7 @@ function SpecialCasesPage() {
                         type="text"
                         value={specialCaseForm.relationship}
                         onChange={handleSpecialCaseFormChange}
-                        disabled={savingCase}
+                        disabled={savingCase || isDeceasedSpouseMode}
                         placeholder="مثال: ابن، ابنة، أخ..."
                         className={`${inputClassName("relationship")} h-12`}
                       />

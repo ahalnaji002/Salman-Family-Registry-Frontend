@@ -11,6 +11,11 @@ const maritalStatusLabels = {
   widowed: "أرمل",
 };
 
+const femaleMaritalStatusLabels = {
+  divorced: "مطلقة",
+  widowed: "أرملة",
+};
+
 const workStatusLabels = {
   employee: "موظف",
   worker: "عامل",
@@ -51,6 +56,7 @@ const educationLabels = {
 
 const specialCaseLabels = {
   martyr: "شهيد",
+  deceased: "متوفى",
   injured: "مصاب",
   disability: "إعاقة",
   patient: "مريض",
@@ -256,11 +262,29 @@ function FamiliesPage() {
         ? String(family.date_of_birth).slice(0, 10)
         : "",
       bloodType: family.blood_type || "",
+      gender: family.gender || "",
+      genderLabel:
+        family.gender === "female"
+          ? "أنثى"
+          : family.gender === "male"
+            ? "ذكر"
+            : "",
       maritalStatus:
-        maritalStatusLabels[family.marital_status] ||
-        family.marital_status ||
-        "",
+        family.gender === "female"
+          ? femaleMaritalStatusLabels[family.marital_status] ||
+            family.marital_status ||
+            ""
+          : maritalStatusLabels[family.marital_status] ||
+            family.marital_status ||
+            "",
       maritalStatusValue: family.marital_status || "",
+      deceasedSpouseFromSalman:
+        family.deceased_spouse_from_salman === null ||
+        family.deceased_spouse_from_salman === undefined
+          ? null
+          : Boolean(family.deceased_spouse_from_salman),
+
+      deceasedSpouseCaseType: family.deceased_spouse_case_type || "",
       incomeLevel: family.income_category || "",
       workStatus:
         workStatusLabels[family.work_status] || family.work_status || "",
@@ -659,8 +683,17 @@ function FamiliesPage() {
       phone: updatedFamily.phone,
       date_of_birth: updatedFamily.date_of_birth ?? updatedFamily.birthDate,
       blood_type: updatedFamily.blood_type ?? updatedFamily.bloodType ?? null,
+      gender: updatedFamily.gender,
       marital_status:
         updatedFamily.marital_status ?? updatedFamily.maritalStatusValue,
+      deceased_spouse_from_salman:
+        updatedFamily.deceased_spouse_from_salman ??
+        updatedFamily.deceasedSpouseFromSalman,
+
+      deceased_spouse_case_type:
+        updatedFamily.deceased_spouse_case_type ??
+        updatedFamily.deceasedSpouseCaseType ??
+        null,
       income_category:
         updatedFamily.income_category ?? updatedFamily.incomeLevel,
       work_status: updatedFamily.work_status ?? updatedFamily.workStatusValue,
@@ -1257,10 +1290,39 @@ function FamiliesPage() {
                     label="فصيلة الدم"
                     value={selectedFamily.bloodType}
                   />
+                  <InfoRow label="الجنس" value={selectedFamily.genderLabel} />
                   <InfoRow
                     label="الحالة الاجتماعية"
                     value={selectedFamily.maritalStatus}
                   />
+                  {selectedFamily.maritalStatusValue === "widowed" && (
+                    <>
+                      <InfoRow
+                        label="الزوج/الزوجة المتوفى/ة من عائلة سلمان"
+                        value={
+                          selectedFamily.deceasedSpouseFromSalman === null
+                            ? "—"
+                            : selectedFamily.deceasedSpouseFromSalman
+                              ? "نعم"
+                              : "لا"
+                        }
+                      />
+
+                      {selectedFamily.deceasedSpouseFromSalman === true && (
+                        <InfoRow
+                          label="نوع الوفاة"
+                          value={
+                            selectedFamily.deceasedSpouseCaseType === "martyr"
+                              ? "استشهاد"
+                              : selectedFamily.deceasedSpouseCaseType ===
+                                  "deceased"
+                                ? "وفاة أخرى"
+                                : "—"
+                          }
+                        />
+                      )}
+                    </>
+                  )}
                   <InfoRow
                     label="فئة الدخل"
                     value={selectedFamily.incomeLevel}

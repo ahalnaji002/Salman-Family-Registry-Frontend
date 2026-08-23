@@ -9,7 +9,10 @@ const initialFormData = {
   dateOfBirth: "",
   phone: "",
   bloodType: "",
+  gender: "",
   maritalStatus: "",
+  deceasedSpouseFromSalman: null,
+  deceasedSpouseCaseType: "",
   workStatus: "",
   jobSector: "",
   otherJobSector: "",
@@ -83,7 +86,15 @@ function BasicInfoPage() {
           dateOfBirth: family.date_of_birth || "",
           phone: family.phone || "",
           bloodType: family.blood_type || "",
+          gender: family.gender || "",
           maritalStatus: family.marital_status || "",
+          deceasedSpouseFromSalman:
+            family.deceased_spouse_from_salman === null ||
+            family.deceased_spouse_from_salman === undefined
+              ? null
+              : Boolean(family.deceased_spouse_from_salman),
+
+          deceasedSpouseCaseType: family.deceased_spouse_case_type || "",
           workStatus: family.work_status || "",
           jobSector: family.job_type || "",
           otherJobSector: family.other_job_type || "",
@@ -133,6 +144,19 @@ function BasicInfoPage() {
     setFormData((currentData) => ({
       ...currentData,
       [name]: finalValue,
+
+      ...(name === "gender"
+        ? {
+            maritalStatus: "",
+          }
+        : {}),
+
+      ...(name === "maritalStatus" && finalValue !== "widowed"
+        ? {
+            deceasedSpouseFromSalman: null,
+            deceasedSpouseCaseType: "",
+          }
+        : {}),
 
       ...(name === "workStatus" && finalValue !== "employee"
         ? {
@@ -207,8 +231,34 @@ function BasicInfoPage() {
       return "رقم الجوال  يجب أن يبدأ بـ 059 أو 056 ويتكون من 10 أرقام.";
     }
 
+    if (!formData.gender) {
+      return "الجنس مطلوب.";
+    }
+
     if (!formData.maritalStatus) {
       return "الحالة الاجتماعية مطلوبة.";
+    }
+
+    if (
+      formData.gender === "female" &&
+      !["divorced", "widowed"].includes(formData.maritalStatus)
+    ) {
+      return "المرأة يمكن أن يكون لها سجل مستقل فقط إذا كانت مطلقة أو أرملة.";
+    }
+
+    if (
+      formData.maritalStatus === "widowed" &&
+      formData.deceasedSpouseFromSalman === null
+    ) {
+      return "يرجى تحديد ما إذا كان الزوج أو الزوجة المتوفى/ة من عائلة سلمان.";
+    }
+
+    if (
+      formData.maritalStatus === "widowed" &&
+      formData.deceasedSpouseFromSalman === true &&
+      !formData.deceasedSpouseCaseType
+    ) {
+      return "يرجى تحديد هل الوفاة استشهاد أم وفاة أخرى.";
     }
 
     if (!formData.workStatus) {
@@ -254,7 +304,13 @@ function BasicInfoPage() {
         date_of_birth: formData.dateOfBirth,
         phone: formData.phone,
         blood_type: formData.bloodType || null,
+        gender: formData.gender,
         marital_status: formData.maritalStatus,
+        deceased_spouse_from_salman: formData.deceasedSpouseFromSalman,
+        deceased_spouse_case_type:
+          formData.deceasedSpouseFromSalman === true
+            ? formData.deceasedSpouseCaseType || null
+            : null,
         work_status: formData.workStatus,
 
         job_type:
@@ -435,7 +491,11 @@ function BasicInfoPage() {
     try {
       await saveAllData();
 
-      navigate("/family/wives");
+      if (formData.gender === "male" && formData.maritalStatus === "married") {
+        navigate("/family/wives");
+      } else {
+        navigate("/family/housing");
+      }
     } catch (requestError) {
       setError(requestError.message || "حدث خطأ أثناء حفظ البيانات.");
     } finally {
@@ -747,6 +807,29 @@ function BasicInfoPage() {
 
             <div>
               <label
+                htmlFor="gender"
+                className="mb-2 block text-sm font-semibold text-[#031632]"
+              >
+                الجنس <span className="text-red-500">*</span>
+              </label>
+
+              <select
+                id="gender"
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                disabled={saving}
+                required
+                className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
+              >
+                <option value="">اختر...</option>
+                <option value="male">ذكر</option>
+                <option value="female">أنثى</option>
+              </select>
+            </div>
+
+            <div>
+              <label
                 htmlFor="maritalStatus"
                 className="mb-2 block text-sm font-semibold text-[#031632]"
               >
@@ -763,11 +846,100 @@ function BasicInfoPage() {
                 className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
               >
                 <option value="">اختر...</option>
-                <option value="single">أعزب</option>
-                <option value="married">متزوج</option>
-                <option value="divorced">مطلق</option>
-                <option value="widowed">أرمل</option>
+
+                {formData.gender === "male" && (
+                  <>
+                    <option value="single">أعزب</option>
+                    <option value="married">متزوج</option>
+                    <option value="divorced">مطلق</option>
+                    <option value="widowed">أرمل</option>
+                  </>
+                )}
+
+                {formData.gender === "female" && (
+                  <>
+                    <option value="divorced">مطلقة</option>
+                    <option value="widowed">أرملة</option>
+                  </>
+                )}
               </select>
+
+              {formData.maritalStatus === "widowed" && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="deceasedSpouseFromSalman"
+                      className="mb-2 block text-sm font-semibold text-[#031632]"
+                    >
+                      هل الزوج/الزوجة المتوفى/ة من عائلة سلمان؟{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+
+                    <select
+                      id="deceasedSpouseFromSalman"
+                      name="deceasedSpouseFromSalman"
+                      value={
+                        formData.deceasedSpouseFromSalman === null
+                          ? ""
+                          : formData.deceasedSpouseFromSalman
+                            ? "true"
+                            : "false"
+                      }
+                      onChange={(event) => {
+                        const value =
+                          event.target.value === ""
+                            ? null
+                            : event.target.value === "true";
+
+                        setFormData((current) => ({
+                          ...current,
+                          deceasedSpouseFromSalman: value,
+                          deceasedSpouseCaseType:
+                            value === true
+                              ? current.deceasedSpouseCaseType
+                              : "",
+                        }));
+
+                        setError("");
+                        setSuccessMessage("");
+                        setIsSaved(false);
+                      }}
+                      disabled={saving}
+                      required
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
+                    >
+                      <option value="">اختر...</option>
+                      <option value="true">نعم</option>
+                      <option value="false">لا</option>
+                    </select>
+                  </div>
+
+                  {formData.deceasedSpouseFromSalman === true && (
+                    <div>
+                      <label
+                        htmlFor="deceasedSpouseCaseType"
+                        className="mb-2 block text-sm font-semibold text-[#031632]"
+                      >
+                        نوع الوفاة <span className="text-red-500">*</span>
+                      </label>
+
+                      <select
+                        id="deceasedSpouseCaseType"
+                        name="deceasedSpouseCaseType"
+                        value={formData.deceasedSpouseCaseType}
+                        onChange={handleChange}
+                        disabled={saving}
+                        required
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-[#fafafe] px-4 text-sm text-[#031632] outline-none transition focus:border-[#d8ad55] focus:bg-white focus:ring-4 focus:ring-[#d8ad55]/10 disabled:opacity-60"
+                      >
+                        <option value="">اختر...</option>
+                        <option value="martyr">استشهاد</option>
+                        <option value="deceased">وفاة أخرى</option>
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             <div>
