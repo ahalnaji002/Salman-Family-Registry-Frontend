@@ -1,16 +1,73 @@
-# React + Vite
+# سجل عائلة سلمان — الواجهة الأمامية
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## نظرة عامة
 
-Currently, two official plugins are available:
+واجهة ويب عربية متجاوبة لنظام سجل عائلة سلمان. تتيح لأرباب الأسر إنشاء حساباتهم وإدخال بيانات الأسرة ومراجعتها، وتوفر لوحة إدارة لمتابعة السجلات والإعدادات والتصدير.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+> **حالة المشروع:** الواجهة المنشورة تعرض صفحة `404 — NOT FOUND` مؤقتًا. جميع صفحات ومسارات النظام الأصلية ما زالت محفوظة في المشروع، ويمكن إعادة تفعيلها من `src/App.jsx`.
 
-## React Compiler
+## الميزات
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- تسجيل حسابات أرباب الأسر وتسجيل الدخول واستعادة كلمة المرور.
+- ملف متكامل للأسرة يشمل البيانات الأساسية والسكن والزوجات والأبناء والبنات المتزوجات والحالات الخاصة.
+- متابعة نسبة اكتمال البيانات ومراجعتها قبل الإرسال النهائي.
+- لوحة إدارة لعرض الإحصاءات وإدارة الأسر والمشرفين.
+- التحكم بفترة التسجيل وصلاحية تعديل البيانات.
+- تصفية البيانات وتصديرها إلى Excel.
+- واجهة عربية متجاوبة تدعم اتجاه RTL.
 
-## Expanding the Oxlint configuration
+## التقنيات والاعتماديات
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- React 19
+- React Router 8
+- Vite 8
+- Tailwind CSS 4
+- Oxlint
+
+## متطلبات التشغيل
+
+- Node.js إصدار حديث متوافق مع Vite 8.
+- npm.
+- نسخة عاملة من API الخاص بالمشروع.
+
+## الإعداد والتشغيل
+
+```bash
+npm install
+```
+
+أنشئ ملف `.env` في جذر المشروع وحدد رابط الـAPI:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+ثم شغّل بيئة التطوير:
+
+```bash
+npm run dev
+```
+
+## الأوامر المتاحة
+
+```bash
+npm run dev       # تشغيل بيئة التطوير
+npm run build     # إنشاء نسخة الإنتاج
+npm run preview   # معاينة نسخة الإنتاج محليًا
+npm run lint      # فحص جودة الكود
+```
+
+## المسارات الرئيسية
+
+- `/` الصفحة الرئيسية.
+- `/login` تسجيل الدخول.
+- `/register` إنشاء حساب.
+- `/forgot-password` استعادة كلمة المرور.
+- `/family/*` صفحات بيانات الأسرة.
+- `/admin/*` لوحة الإدارة.
+
+## النشر
+
+المشروع مهيأ للنشر على Vercel، ويحتوي `vercel.json` على إعداد إعادة توجيه مسارات تطبيق الصفحة الواحدة إلى `index.html`.
+
+قبل النشر، اضبط `VITE_API_BASE_URL` على رابط خادم الـAPI الفعلي.
