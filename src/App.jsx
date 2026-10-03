@@ -1,7 +1,7 @@
-import NotFoundPage from "./pages/public/NotFoundPage";
+import AppRoutes from "./routes/AppRoutes";
 
 function App() {
-  return <NotFoundPage />;
+  return <AppRoutes />;
 }
 
 export default App;

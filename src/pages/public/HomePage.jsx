@@ -87,7 +87,7 @@ function HomePage() {
   };
 
   return (
-    <section className="relative min-h-[calc(100vh-76px)] overflow-hidden bg-[#fffaf2]">
+    <section className="relative flex flex-1 overflow-hidden bg-[#fffaf2]">
       <div
         className="pointer-events-none absolute inset-0"
         aria-hidden="true"
@@ -97,7 +97,7 @@ function HomePage() {
         }}
       />
 
-      <div className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-5 py-12 md:px-8 lg:min-h-[720px] lg:grid-cols-[1.1fr_0.9fr] lg:py-16">
+      <div className="relative mx-auto grid w-full max-w-7xl flex-1 items-center gap-10 px-5 py-12 md:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:py-8">
         <div className="order-2 lg:order-1">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#e7d9bd] bg-white/70 px-4 py-2 text-sm font-semibold text-[#5f513d] shadow-sm backdrop-blur-sm">
             <svg
@@ -283,13 +283,14 @@ function HomePage() {
                     تذكرني
                   </label>
 
-                  {/*<button
+                  <button
                     type="button"
+                    disabled={loading}
                     onClick={() => navigate("/forgot-password")}
-                    className="font-semibold text-[#031632] hover:underline"
+                    className="font-semibold text-[#031632] hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     نسيت كلمة المرور؟
-                  </button>*/}
+                  </button>
                 </div>
 
                 {error && (

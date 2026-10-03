@@ -8,11 +8,9 @@
 
 واجهة ويب عربية متجاوبة لنظام سجل عائلة سلمان. تتيح لأرباب الأسر إنشاء حساباتهم وإدخال بيانات الأسرة ومراجعتها، وتوفر لوحة إدارة لمتابعة السجلات والإعدادات والتصدير.
 
-> **حالة المشروع:** الواجهة المنشورة تعرض صفحة `404 — NOT FOUND` مؤقتًا. جميع صفحات ومسارات النظام الأصلية ما زالت محفوظة في المشروع، ويمكن إعادة تفعيلها من `src/App.jsx`.
-
 ## الميزات
 
-- تسجيل حسابات أرباب الأسر وتسجيل الدخول واستعادة كلمة المرور.
+- تسجيل حسابات أرباب الأسر وتسجيل الدخول والتواصل مع الدعم الفني عبر واتساب عند نسيان كلمة المرور.
 - ملف متكامل للأسرة يشمل البيانات الأساسية والسكن والزوجات والأبناء والبنات المتزوجات والحالات الخاصة.
 - متابعة نسبة اكتمال البيانات ومراجعتها قبل الإرسال النهائي.
 - لوحة إدارة لعرض الإحصاءات وإدارة الأسر والمشرفين.
@@ -66,7 +64,7 @@ npm run lint      # فحص جودة الكود
 - `/` الصفحة الرئيسية.
 - `/login` تسجيل الدخول.
 - `/register` إنشاء حساب.
-- `/forgot-password` استعادة كلمة المرور.
+- `/forgot-password` التواصل مع الدعم الفني لاستعادة الحساب عبر واتساب.
 - `/family/*` صفحات بيانات الأسرة.
 - `/admin/*` لوحة الإدارة.
 
@@ -84,11 +82,9 @@ npm run lint      # فحص جودة الكود
 
 A responsive, Arabic-first web interface for the Salman Family Registry. It allows heads of households to create accounts, enter and review family information, and gives administrators tools to manage records, settings, and exports.
 
-> **Project status:** The deployed frontend temporarily displays `404 — NOT FOUND`. All original pages and routes remain in the project and can be restored from `src/App.jsx`.
-
 ### Features
 
-- Account registration, sign-in, and password recovery.
+- Account registration, sign-in, and WhatsApp support for forgotten passwords.
 - Complete family profiles covering basic information, housing, wives, children, married daughters, and special cases.
 - Completion tracking and final review before submission.
 - Administration dashboard for statistics, families, and supervisors.
@@ -144,7 +140,7 @@ npm run lint      # Run code-quality checks
 - `/` home page.
 - `/login` sign in.
 - `/register` account registration.
-- `/forgot-password` password recovery.
+- `/forgot-password` contact technical support through WhatsApp for account recovery.
 - `/family/*` family data pages.
 - `/admin/*` administration dashboard.
 

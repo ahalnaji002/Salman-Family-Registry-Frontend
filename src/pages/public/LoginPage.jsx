@@ -261,8 +261,7 @@ function LoginPage() {
                 تذكرني
               </label>
 
-              {/*
-                <button
+              <button
                 type="button"
                 disabled={loading}
                 onClick={() => navigate("/forgot-password")}
@@ -270,7 +269,6 @@ function LoginPage() {
               >
                 نسيت كلمة المرور؟
               </button>
-              */}
             </div>
 
             {error && (
@@ -311,22 +309,12 @@ function LoginPage() {
           </form>
 
           <div className="mt-6 border-t border-[#eadfc8] pt-5 text-center">
-            {/*<p className="text-sm leading-6 text-slate-500">
-              نسيت كلمة المرور؟ تواصل مع مسؤول النظام لإعادة تعيينها.
-            </p>*/}
-
             <button
               type="button"
-              onClick={() =>
-                window.open(
-                  "https://wa.me/972594762842?text=مرحبًا%20أحمد%20مسعود،%20أحتاج%20مساعدة%20بخصوص%20حسابي%20في%20سجل%20عائلة%20سلمان",
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
+              onClick={() => navigate("/forgot-password")}
               className="mt-2 text-sm font-bold text-[#031632] hover:underline"
             >
-              تواصل مع المسؤول
+              التواصل مع الدعم الفني
             </button>
           </div>
 
