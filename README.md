@@ -2,74 +2,68 @@
 
 **English** | [العربية](README.ar.md)
 
-## Project Overview
-
-A responsive, Arabic-first web interface for the Salman Family Registry. It allows heads of households to create accounts, enter and review family information, and gives administrators tools to manage records, settings, and exports.
+## Overview
+A responsive, Arabic-first web interface for the Salman Family Registry. Heads of households can register, manage family information, and review their records. Administrators can manage families, supervisors, settings, and exports.
 
 ## Features
-
 - Account registration, sign-in, and WhatsApp support for forgotten passwords.
-- Complete family profiles covering basic information, housing, wives, children, married daughters, and special cases.
-- Completion tracking and final review before submission.
-- Administration dashboard for statistics, families, and supervisors.
-- Registration-period and editing-permission controls.
-- Data filtering and Excel export.
-- Responsive Arabic interface with RTL support.
+- Family profiles covering household details, housing, wives, children, married daughters, and special cases.
+- Completion tracking and final review.
+- Administrative statistics, family and supervisor management, registration/editing controls, filtering, and Excel exports.
+- Responsive right-to-left Arabic interface.
 
-## Dependencies
+## Tech Stack
+- **Frontend:** React 19, React Router 8, Vite 8, Tailwind CSS 4.
+- **Code quality:** Oxlint.
+- **Backend:** Separate REST API (see [Backend repository](https://github.com/ahalnaji002/Salman-Family-Registry-Backend)).
+- **Database:** MySQL, managed by the backend.
 
-- React 19
-- React Router 8
-- Vite 8
-- Tailwind CSS 4
-- Oxlint
+## Project Structure
+The following paths are verified from the repository:
 
-## Requirements
+```text
+.
+├── src/
+│   ├── App.jsx
+│   └── routes/
+│       └── AppRoutes (imported by App.jsx)
+├── package.json
+├── vercel.json
+├── README.md
+└── README.ar.md
+```
 
-- A recent Node.js version compatible with Vite 8.
-- npm.
-- A running instance of the project API.
+The main application renders `AppRoutes` from `src/App.jsx`. The routing includes `/`, `/login`, `/register`, `/forgot-password`, `/family/*`, and `/admin/*`.
 
-## Setup
-
-Install dependencies:
+## Getting Started
+Requires Node.js compatible with Vite 8, npm, and a running backend API.
 
 ```bash
 npm install
 ```
 
-Create a `.env` file in the project root and set the API URL:
+Create `.env` in the project root:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
-Start the development server:
+Start development:
 
 ```bash
 npm run dev
 ```
 
-## Available Scripts
+## Testing
+The repository defines build and lint checks, but no dedicated `test` script in `package.json`.
 
 ```bash
-npm run dev       # Start the development server
-npm run build     # Create a production build
-npm run preview   # Preview the production build locally
-npm run lint      # Run code-quality checks
+npm run lint
+npm run build
+npm run preview
 ```
 
-## Main Routes
-
-- `/` home page.
-- `/login` sign in.
-- `/register` account registration.
-- `/forgot-password` contact technical support through WhatsApp for account recovery.
-- `/family/*` family data pages.
-- `/admin/*` administration dashboard.
-
-## Deployment
-
-The project is configured for Vercel. The included `vercel.json` rewrites single-page application routes to `index.html`.
-
-Before deployment, set `VITE_API_BASE_URL` to the production API URL.
+## Documentation
+- [Arabic README](README.ar.md)
+- [Backend repository](https://github.com/ahalnaji002/Salman-Family-Registry-Backend)
+- **Deployment:** `vercel.json` rewrites SPA routes to `index.html`. Set `VITE_API_BASE_URL` to the production API endpoint when deploying to Vercel.
