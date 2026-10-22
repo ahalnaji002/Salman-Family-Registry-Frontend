@@ -19,18 +19,67 @@
 - **قاعدة البيانات:** MySQL، وتُدار من خلال Backend.
 
 ## هيكلية المشروع
-المسارات التالية مؤكدة من ملفات المستودع:
+تعتمد الشجرة التالية على هيكل المشروع المرسل، مع إظهار ملفَي التوثيق بالعربية والإنجليزية.
 
 ```text
-.
+frontend/
+├── public/
+│   ├── favicon.svg
+│   ├── icons.svg
+│   └── salman-family-logo.png
 ├── src/
+│   ├── assets/
+│   │   └── images/
+│   │       └── salman-family-logo.png
+│   ├── components/
+│   │   └── SaveStatusBadge.jsx
+│   ├── config/
+│   │   └── api.js
+│   ├── layouts/
+│   │   ├── AdminLayout.jsx
+│   │   ├── FamilyLayout.jsx
+│   │   └── PublicLayout.jsx
+│   ├── pages/
+│   │   ├── admin/
+│   │   │   ├── AddFamilyModal.jsx
+│   │   │   ├── AddSupervisorModal.jsx
+│   │   │   ├── DashboardPage.jsx
+│   │   │   ├── DeleteFamilyModal.jsx
+│   │   │   ├── EditFamilyModal.jsx
+│   │   │   ├── EditSupervisorModal.jsx
+│   │   │   ├── ExportPage.jsx
+│   │   │   ├── FamiliesPage.jsx
+│   │   │   └── SettingsPage.jsx
+│   │   ├── family/
+│   │   │   ├── BasicInfoPage.jsx
+│   │   │   ├── ChildrenPage.jsx
+│   │   │   ├── FamilyDashboardPage.jsx
+│   │   │   ├── HousingPage.jsx
+│   │   │   ├── MarriedDaughtersPage.jsx
+│   │   │   ├── ReviewPage.jsx
+│   │   │   ├── SpecialCasesPage.jsx
+│   │   │   └── WivesPage.jsx
+│   │   └── public/
+│   │       ├── ForgotPasswordPage.jsx
+│   │       ├── HomePage.jsx
+│   │       ├── LoginPage.jsx
+│   │       ├── NotFoundPage.jsx
+│   │       └── RegisterPage.jsx
+│   ├── routes/
+│   │   └── AppRoutes.jsx
+│   ├── App.css
 │   ├── App.jsx
-│   └── routes/
-│       └── AppRoutes (يستوردها App.jsx)
+│   ├── index.css
+│   └── main.jsx
+├── .gitignore
+├── .oxlintrc.json
+├── index.html
+├── package-lock.json
 ├── package.json
-├── vercel.json
 ├── README.md
-└── README.ar.md
+├── README.ar.md
+├── vercel.json
+└── vite.config.js
 ```
 
 يعرض `src/App.jsx` مكوّن `AppRoutes`. وتشمل المسارات الرئيسية `/` و`/login` و`/register` و`/forgot-password` و`/family/*` و`/admin/*`.
