@@ -5,6 +5,8 @@
 ## Overview
 A responsive, Arabic-first web interface for the Salman Family Registry. Heads of households can register, manage family information, and review their records. Administrators can manage families, supervisors, settings, and exports.
 
+> **Project status:** The deployed frontend temporarily displays `404 — NOT FOUND`. All original pages and routes remain preserved and can be restored from `src/App.jsx`.
+
 ## Features
 - Account registration, sign-in, and WhatsApp support for forgotten passwords.
 - Family profiles covering household details, housing, wives, children, married daughters, and special cases.
@@ -44,7 +46,7 @@ frontend/
 └── README.ar.md
 ```
 
-The main application renders `AppRoutes` from `src/App.jsx`. The routing includes `/`, `/login`, `/register`, `/forgot-password`, `/family/*`, and `/admin/*`.
+The application temporarily renders `NotFoundPage` from `src/App.jsx`. The preserved router includes `/`, `/login`, `/register`, `/forgot-password`, `/family/*`, and `/admin/*`.
 
 ## Getting Started
 Requires Node.js compatible with Vite 8, npm, and a running backend API.
