@@ -19,18 +19,67 @@ A responsive, Arabic-first web interface for the Salman Family Registry. Heads o
 - **Database:** MySQL, managed by the backend.
 
 ## Project Structure
-The following paths are verified from the repository:
+The structure below follows the provided project tree and includes the bilingual documentation files.
 
 ```text
-.
+frontend/
+├── public/
+│   ├── favicon.svg
+│   ├── icons.svg
+│   └── salman-family-logo.png
 ├── src/
+│   ├── assets/
+│   │   └── images/
+│   │       └── salman-family-logo.png
+│   ├── components/
+│   │   └── SaveStatusBadge.jsx
+│   ├── config/
+│   │   └── api.js
+│   ├── layouts/
+│   │   ├── AdminLayout.jsx
+│   │   ├── FamilyLayout.jsx
+│   │   └── PublicLayout.jsx
+│   ├── pages/
+│   │   ├── admin/
+│   │   │   ├── AddFamilyModal.jsx
+│   │   │   ├── AddSupervisorModal.jsx
+│   │   │   ├── DashboardPage.jsx
+│   │   │   ├── DeleteFamilyModal.jsx
+│   │   │   ├── EditFamilyModal.jsx
+│   │   │   ├── EditSupervisorModal.jsx
+│   │   │   ├── ExportPage.jsx
+│   │   │   ├── FamiliesPage.jsx
+│   │   │   └── SettingsPage.jsx
+│   │   ├── family/
+│   │   │   ├── BasicInfoPage.jsx
+│   │   │   ├── ChildrenPage.jsx
+│   │   │   ├── FamilyDashboardPage.jsx
+│   │   │   ├── HousingPage.jsx
+│   │   │   ├── MarriedDaughtersPage.jsx
+│   │   │   ├── ReviewPage.jsx
+│   │   │   ├── SpecialCasesPage.jsx
+│   │   │   └── WivesPage.jsx
+│   │   └── public/
+│   │       ├── ForgotPasswordPage.jsx
+│   │       ├── HomePage.jsx
+│   │       ├── LoginPage.jsx
+│   │       ├── NotFoundPage.jsx
+│   │       └── RegisterPage.jsx
+│   ├── routes/
+│   │   └── AppRoutes.jsx
+│   ├── App.css
 │   ├── App.jsx
-│   └── routes/
-│       └── AppRoutes (imported by App.jsx)
+│   ├── index.css
+│   └── main.jsx
+├── .gitignore
+├── .oxlintrc.json
+├── index.html
+├── package-lock.json
 ├── package.json
-├── vercel.json
 ├── README.md
-└── README.ar.md
+├── README.ar.md
+├── vercel.json
+└── vite.config.js
 ```
 
 The main application renders `AppRoutes` from `src/App.jsx`. The routing includes `/`, `/login`, `/register`, `/forgot-password`, `/family/*`, and `/admin/*`.
