@@ -19,15 +19,26 @@ A responsive, Arabic-first web interface for the Salman Family Registry. Heads o
 - **Database:** MySQL, managed by the backend.
 
 ## Project Structure
-The following paths are verified from the repository:
+The following is a high-level overview of the main project directories and entry files.
 
 ```text
-.
+frontend/
+├── public/
 ├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── config/
+│   ├── layouts/
+│   ├── pages/
+│   │   ├── admin/
+│   │   ├── family/
+│   │   └── public/
+│   ├── routes/
 │   ├── App.jsx
-│   └── routes/
-│       └── AppRoutes (imported by App.jsx)
+│   └── main.jsx
+├── index.html
 ├── package.json
+├── vite.config.js
 ├── vercel.json
 ├── README.md
 └── README.ar.md

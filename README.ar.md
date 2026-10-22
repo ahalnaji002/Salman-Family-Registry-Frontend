@@ -19,15 +19,26 @@
 - **قاعدة البيانات:** MySQL، وتُدار من خلال Backend.
 
 ## هيكلية المشروع
-المسارات التالية مؤكدة من ملفات المستودع:
+توضح الشجرة التالية المجلدات الأساسية وملفات الدخول والإعدادات الرئيسية دون سرد جميع الملفات الداخلية.
 
 ```text
-.
+frontend/
+├── public/
 ├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── config/
+│   ├── layouts/
+│   ├── pages/
+│   │   ├── admin/
+│   │   ├── family/
+│   │   └── public/
+│   ├── routes/
 │   ├── App.jsx
-│   └── routes/
-│       └── AppRoutes (يستوردها App.jsx)
+│   └── main.jsx
+├── index.html
 ├── package.json
+├── vite.config.js
 ├── vercel.json
 ├── README.md
 └── README.ar.md
